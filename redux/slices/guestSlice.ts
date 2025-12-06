@@ -7,6 +7,7 @@ export interface Guest {
   kategori: string;
   skala_prioritas: string;
   tipe_undangan: string;
+  qty: number;
   created_at?: string;
 }
 

@@ -42,6 +42,7 @@ const getInitialFormData = (guest: Guest | null | undefined) => {
       kategori: guest.kategori,
       skala_prioritas: guest.skala_prioritas,
       tipe_undangan: guest.tipe_undangan,
+      qty: guest.qty,
     };
   }
   return {
@@ -49,6 +50,7 @@ const getInitialFormData = (guest: Guest | null | undefined) => {
     kategori: "",
     skala_prioritas: "",
     tipe_undangan: "",
+    qty: 1,
   };
 };
 
@@ -128,7 +130,7 @@ export function GuestFormModal({
               >
                 <SelectTrigger
                   id="kategori"
-                  className="w-full !h-11 px-3 py-2 bg-input border-border leading-normal"
+                  className="w-full h-11 px-3 py-2 bg-input border-border leading-normal"
                 >
                   <SelectValue placeholder="Pilih kategori" />
                   <ChevronDown className="h-4 w-4 opacity-50 ml-auto" />
@@ -158,7 +160,7 @@ export function GuestFormModal({
               >
                 <SelectTrigger
                   id="skala_prioritas"
-                  className="w-full !h-11 px-3 py-2 bg-input border-border leading-normal"
+                  className="w-full h-11 px-3 py-2 bg-input border-border leading-normal"
                 >
                   <SelectValue placeholder="Pilih skala prioritas" />
                   <ChevronDown className="h-4 w-4 opacity-50 ml-auto" />
@@ -188,7 +190,7 @@ export function GuestFormModal({
               >
                 <SelectTrigger
                   id="tipe_undangan"
-                  className="w-full !h-11 px-3 py-2 bg-input border-border leading-normal"
+                  className="w-full h-11 px-3 py-2 bg-input border-border leading-normal"
                 >
                   <SelectValue placeholder="Pilih tipe undangan" />
                   <ChevronDown className="h-4 w-4 opacity-50 ml-auto" />
@@ -201,6 +203,29 @@ export function GuestFormModal({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="qty"
+                className="text-sm font-medium text-foreground"
+              >
+                Quantity
+              </Label>
+              <Input
+                id="qty"
+                type="number"
+                min="1"
+                value={formData.qty}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    qty: parseInt(e.target.value) || 1,
+                  })
+                }
+                className="w-full h-11 px-3 py-2 bg-input border-border focus:border-primary focus:ring-primary/20 leading-normal"
+                placeholder="Masukkan jumlah"
+                required
+              />
             </div>
           </div>
           <DialogFooter className="gap-3 pt-4">

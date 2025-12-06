@@ -21,27 +21,30 @@ import { cn } from "@/lib/utils";
 const getBadgeColor = (type: string, value: string) => {
   if (type === "kategori") {
     const colors: Record<string, string> = {
-      "keluarga-inti": "bg-blue-500/15 text-blue-400 border-blue-500/30",
-      "keluarga-besar": "bg-purple-500/15 text-purple-400 border-purple-500/30",
-      teman: "bg-green-500/15 text-green-400 border-green-500/30",
-      kolega: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+      "Keluarga Inti": "bg-blue-500/15 text-blue-400 border-blue-500/30",
+      "Keluarga Besar": "bg-purple-500/15 text-purple-400 border-purple-500/30",
+      Teman: "bg-green-500/15 text-green-400 border-green-500/30",
+      Kolega: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+      Tetangga: "bg-teal-500/15 text-teal-400 border-teal-500/30",
+      "Tamu Orang Tua": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
     };
     return colors[value] || "bg-gray-500/15 text-gray-400 border-gray-500/30";
   }
 
   if (type === "skala_prioritas") {
     const colors: Record<string, string> = {
-      tinggi: "bg-red-500/15 text-red-400 border-red-500/30",
-      sedang: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-      rendah: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      "Wajib Hadir": "bg-red-500/15 text-red-400 border-red-500/30",
+      Penting: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+      Cadangan: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     };
     return colors[value] || "bg-gray-500/15 text-gray-400 border-gray-500/30";
   }
 
   if (type === "tipe_undangan") {
     const colors: Record<string, string> = {
-      digital: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-      fisik: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+      Digital: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+      Cetak: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+      Kabar: "bg-violet-500/15 text-violet-400 border-violet-500/30",
     };
     return colors[value] || "bg-gray-500/15 text-gray-400 border-gray-500/30";
   }
@@ -61,8 +64,17 @@ export const createColumns = (
     ),
   },
   {
+    accessorKey: "qty",
+    header: "Qty",
+    size: 120,
+    cell: ({ row }) => (
+      <div className="font-medium text-foreground">{row.getValue("qty")}</div>
+    ),
+  },
+  {
     accessorKey: "kategori",
     header: "Kategori",
+    size: 200,
     cell: ({ row }) => {
       const guest = row.original;
       const option = KATEGORI_OPTIONS.find(
@@ -73,7 +85,7 @@ export const createColumns = (
           value={guest.kategori}
           onValueChange={(value) => onInlineUpdate(guest.id, "kategori", value)}
         >
-          <SelectTrigger className="w-fit h-auto border-0 bg-transparent hover:bg-transparent p-0 focus:ring-0 focus:ring-offset-0 gap-0">
+          <SelectTrigger className="w-fit h-auto border-0! ring-0! bg-transparent hover:bg-transparent p-0 gap-0">
             <Badge
               className={cn(
                 "font-medium border gap-1.5 px-3 py-1.5 pr-2",
@@ -105,6 +117,7 @@ export const createColumns = (
   {
     accessorKey: "skala_prioritas",
     header: "Skala Prioritas",
+    size: 200,
     cell: ({ row }) => {
       const guest = row.original;
       const option = SKALA_PRIORITAS_OPTIONS.find(
@@ -117,7 +130,7 @@ export const createColumns = (
             onInlineUpdate(guest.id, "skala_prioritas", value)
           }
         >
-          <SelectTrigger className="w-fit h-auto border-0 bg-transparent hover:bg-transparent p-0 focus:ring-0 focus:ring-offset-0 gap-0">
+          <SelectTrigger className="w-fit h-auto border-0! ring-0! bg-transparent hover:bg-transparent p-0 gap-0">
             <Badge
               className={cn(
                 "font-medium border gap-1.5 px-3 py-1.5 pr-2",
@@ -149,6 +162,7 @@ export const createColumns = (
   {
     accessorKey: "tipe_undangan",
     header: "Tipe Undangan",
+    size: 200,
     cell: ({ row }) => {
       const guest = row.original;
       const option = TIPE_UNDANGAN_OPTIONS.find(
@@ -161,7 +175,7 @@ export const createColumns = (
             onInlineUpdate(guest.id, "tipe_undangan", value)
           }
         >
-          <SelectTrigger className="w-fit h-auto border-0 bg-transparent hover:bg-transparent p-0 focus:ring-0 focus:ring-offset-0 gap-0">
+          <SelectTrigger className="w-fit h-auto border-0! ring-0! bg-transparent hover:bg-transparent p-0 gap-0">
             <Badge
               className={cn(
                 "font-medium border gap-1.5 px-3 py-1.5 pr-2",

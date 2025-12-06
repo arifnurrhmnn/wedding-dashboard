@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X, ListFilter } from "lucide-react";
+import { Search, X, ListFilter, ArrowUpDown } from "lucide-react";
 import { Guest } from "@/redux/slices/guestSlice";
 import { createColumns } from "./GuestColumns";
 import {
@@ -96,6 +96,36 @@ export function GuestTable({ data, onInlineUpdate, onEdit }: GuestTableProps) {
             </button>
           )}
         </div>
+
+        {/* Sort by Qty */}
+        <Select
+          value={
+            sorting.find((s) => s.id === "qty")
+              ? sorting.find((s) => s.id === "qty")?.desc
+                ? "desc"
+                : "asc"
+              : "none"
+          }
+          onValueChange={(value) => {
+            if (value === "none") {
+              setSorting(sorting.filter((s) => s.id !== "qty"));
+            } else {
+              setSorting([{ id: "qty", desc: value === "desc" }]);
+            }
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-[180px] h-10 bg-input border-border">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Sort Qty" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Default</SelectItem>
+            <SelectItem value="desc">Qty Terbesar</SelectItem>
+            <SelectItem value="asc">Qty Terkecil</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Filter by Kategori */}
         <Select
