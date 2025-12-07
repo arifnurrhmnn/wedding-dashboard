@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, ChevronDown } from "lucide-react";
 import {
   KATEGORI_OPTIONS,
   SKALA_PRIORITAS_OPTIONS,
@@ -54,21 +54,14 @@ const getBadgeColor = (type: string, value: string) => {
 
 export const createColumns = (
   onInlineUpdate: (id: string, field: string, value: string) => void,
-  onEdit: (guest: Guest) => void
+  onEdit: (guest: Guest) => void,
+  onDelete: (guest: Guest) => void
 ): ColumnDef<Guest>[] => [
   {
     accessorKey: "nama",
     header: "Nama",
     cell: ({ row }) => (
       <div className="font-medium text-foreground">{row.getValue("nama")}</div>
-    ),
-  },
-  {
-    accessorKey: "qty",
-    header: "Qty",
-    size: 120,
-    cell: ({ row }) => (
-      <div className="font-medium text-foreground">{row.getValue("qty")}</div>
     ),
   },
   {
@@ -205,13 +198,21 @@ export const createColumns = (
     },
   },
   {
+    accessorKey: "qty",
+    header: "Qty",
+    size: 100,
+    cell: ({ row }) => (
+      <div className="font-medium text-foreground">{row.getValue("qty")}</div>
+    ),
+  },
+  {
     id: "actions",
     header: () => <div className="text-center">Actions</div>,
-    size: 80,
+    size: 120,
     cell: ({ row }) => {
       const guest = row.original;
       return (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -219,6 +220,14 @@ export const createColumns = (
             className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
           >
             <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(guest)}
+            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       );

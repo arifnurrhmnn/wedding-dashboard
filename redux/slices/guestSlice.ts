@@ -3,6 +3,7 @@ import axiosClient from "@/lib/axiosClient";
 
 export interface Guest {
   id: string;
+  unique_id?: string;
   nama: string;
   kategori: string;
   skala_prioritas: string;
@@ -92,6 +93,21 @@ export const inlineUpdateGuest = createAsyncThunk(
   }
 );
 
+export const deleteGuest = createAsyncThunk(
+  "guests/deleteGuest",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await axiosClient.delete(`/tamu-undangan/${id}`);
+      return id;
+    } catch (error) {
+      return rejectWithValue(
+        (error as { response?: { data?: { error?: string } } }).response?.data
+          ?.error || "Failed to delete guest"
+      );
+    }
+  }
+);
+
 const guestSlice = createSlice({
   name: "guests",
   initialState,
@@ -157,6 +173,14 @@ const guestSlice = createSlice({
       const index = state.list.findIndex((g) => g.id === action.payload.id);
       if (index !== -1) {
         state.list[index] = action.payload;
+      }
+    });
+
+    // Delete Guest
+    builder.addCase(deleteGuest.fulfilled, (state, action) => {
+      const index = state.list.findIndex((g) => g.id === action.payload);
+      if (index !== -1) {
+        state.list.splice(index, 1);
       }
     });
   },

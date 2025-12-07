@@ -43,14 +43,20 @@ interface GuestTableProps {
   data: Guest[];
   onInlineUpdate: (id: string, field: string, value: string) => void;
   onEdit: (guest: Guest) => void;
+  onDelete: (guest: Guest) => void;
 }
 
-export function GuestTable({ data, onInlineUpdate, onEdit }: GuestTableProps) {
+export function GuestTable({
+  data,
+  onInlineUpdate,
+  onEdit,
+  onDelete,
+}: GuestTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const columns = createColumns(onInlineUpdate, onEdit);
+  const columns = createColumns(onInlineUpdate, onEdit, onDelete);
 
   const table = useReactTable({
     data,
