@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Users, LogOut, Heart } from "lucide-react";
+import { Users, LogOut, Heart, Gift, Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,16 @@ const menuItems = [
     title: "Tamu Undangan",
     href: "/dashboard/tamu-undangan",
     icon: Users,
+  },
+  {
+    title: "Seserahan",
+    href: "/dashboard/seserahan",
+    icon: Gift,
+  },
+  {
+    title: "Souvenir",
+    href: "/dashboard/souvenir",
+    icon: Package,
   },
 ];
 

@@ -207,8 +207,8 @@ export const createColumns = (
   },
   {
     id: "actions",
-    header: () => <div className="text-center">Actions</div>,
-    size: 120,
+    header: () => <div className="text-center">Aksi</div>,
+    size: 100,
     cell: ({ row }) => {
       const guest = row.original;
       return (
