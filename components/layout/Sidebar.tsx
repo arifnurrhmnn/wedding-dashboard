@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Users, LogOut, Heart, Gift, Package } from "lucide-react";
+import { Users, LogOut, Heart, Gift, Package, Calendar, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,16 @@ const menuItems = [
     title: "Souvenir",
     href: "/dashboard/souvenir",
     icon: Package,
+  },
+  {
+    title: "Planning",
+    href: "/dashboard/planning",
+    icon: Calendar,
+  },
+  {
+    title: "Checklist",
+    href: "/dashboard/checklist",
+    icon: CheckSquare,
   },
 ];
 
