@@ -23,7 +23,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, description, category, timeline_phase, due_date, status, priority } = body;
+    const {
+      title,
+      description,
+      category,
+      timeline_phase,
+      due_date,
+      status,
+      priority,
+    } = body;
 
     if (!title || !category || !timeline_phase) {
       return NextResponse.json(
@@ -34,15 +42,17 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from("checklist")
-      .insert([{
-        title,
-        description,
-        category,
-        timeline_phase,
-        due_date,
-        status: status || "todo",
-        priority: priority || "medium",
-      }])
+      .insert([
+        {
+          title,
+          description,
+          category,
+          timeline_phase,
+          due_date,
+          status: status || "todo",
+          priority: priority || "medium",
+        },
+      ])
       .select()
       .single();
 

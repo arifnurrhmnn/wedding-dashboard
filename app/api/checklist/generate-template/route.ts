@@ -4,31 +4,51 @@ import { DEFAULT_CHECKLIST_TEMPLATE } from "@/utils/constants";
 
 export async function POST() {
   try {
-    // Check if template already exists
-    const { data: existing, error: checkError } = await supabase
+    // Fetch all existing tasks
+    const { data: existingTasks, error: fetchError } = await supabase
       .from("checklist")
-      .select("id")
-      .limit(1);
+      .select("title, category, timeline_phase");
 
-    if (checkError) throw checkError;
+    if (fetchError) throw fetchError;
 
-    // If tasks already exist, don't generate template
-    if (existing && existing.length > 0) {
-      return NextResponse.json(
-        { error: "Template already generated" },
-        { status: 400 }
-      );
+    // Create a Set of existing task signatures for efficient lookup
+    const existingTaskSignatures = new Set(
+      (existingTasks || []).map(
+        (task) =>
+          `${task.title.toLowerCase().trim()}|${task.category}|${
+            task.timeline_phase
+          }`
+      )
+    );
+
+    // Filter out tasks that already exist
+    const newTasks = DEFAULT_CHECKLIST_TEMPLATE.filter((template) => {
+      const signature = `${template.title.toLowerCase().trim()}|${
+        template.category
+      }|${template.timeline_phase}`;
+      return !existingTaskSignatures.has(signature);
+    });
+
+    // If no new tasks to add, return early
+    if (newTasks.length === 0) {
+      return NextResponse.json({
+        addedCount: 0,
+        message: "All template tasks already exist",
+      });
     }
 
-    // Generate template
+    // Insert only new tasks
     const { data, error } = await supabase
       .from("checklist")
-      .insert(DEFAULT_CHECKLIST_TEMPLATE)
+      .insert(newTasks)
       .select();
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      addedCount: data?.length || 0,
+      tasks: data,
+    });
   } catch (error) {
     console.error("Error generating template:", error);
     return NextResponse.json(

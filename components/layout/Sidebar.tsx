@@ -1,11 +1,22 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Users, LogOut, Heart, Gift, Package, Calendar, CheckSquare } from "lucide-react";
+import {
+  Users,
+  LogOut,
+  Heart,
+  Gift,
+  Package,
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const menuItems = [
   {
@@ -23,17 +34,80 @@ const menuItems = [
     href: "/dashboard/souvenir",
     icon: Package,
   },
-  {
-    title: "Planning",
-    href: "/dashboard/planning",
-    icon: Calendar,
-  },
-  {
-    title: "Checklist",
-    href: "/dashboard/checklist",
-    icon: CheckSquare,
-  },
 ];
+
+const weddingPlanGroup = {
+  title: "Wedding Plan",
+  icon: Heart,
+  submenus: [
+    {
+      title: "Planning",
+      href: "/dashboard/planning",
+      icon: Calendar,
+    },
+    {
+      title: "Checklist",
+      href: "/dashboard/checklist",
+      icon: CheckSquare,
+    },
+  ],
+};
+
+function WeddingPlanGroup({ pathname }: { pathname: string }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const GroupIcon = weddingPlanGroup.icon;
+  const isAnySubmenuActive = weddingPlanGroup.submenus.some(
+    (submenu) => pathname === submenu.href
+  );
+
+  return (
+    <div className="space-y-1">
+      {/* Group Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+          isAnySubmenuActive
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <GroupIcon className="h-4 w-4" />
+        <span className="flex-1 text-left">{weddingPlanGroup.title}</span>
+        {isExpanded ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+      </button>
+
+      {/* Submenus */}
+      {isExpanded && (
+        <div className="ml-4 space-y-1 border-l-2 border-border pl-3">
+          {weddingPlanGroup.submenus.map((submenu) => {
+            const SubmenuIcon = submenu.icon;
+            const isActive = pathname === submenu.href;
+            return (
+              <Link
+                key={submenu.href}
+                href={submenu.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+                  isActive
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <SubmenuIcon className="h-4 w-4" />
+                {submenu.title}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -82,6 +156,7 @@ export function Sidebar() {
       {/* Menu Section */}
       <div className="flex-1 overflow-auto py-4">
         <nav className="grid gap-1 px-3">
+          {/* Regular Menu Items */}
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -101,6 +176,9 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Wedding Plan Group */}
+          <WeddingPlanGroup pathname={pathname} />
         </nav>
       </div>
 

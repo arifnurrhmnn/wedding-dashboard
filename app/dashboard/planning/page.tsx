@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Calendar, Clock } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Clock,
+  ArrowRight,
+} from "lucide-react";
 import { PLANNING_PHASES } from "@/utils/constants";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function PlanningPage() {
-  const [expandedPhases, setExpandedPhases] = useState<string[]>([
-    "phase_1",
-  ]);
+  const [expandedPhases, setExpandedPhases] = useState<string[]>(["phase_1"]);
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases((prev) =>
@@ -145,6 +151,27 @@ export default function PlanningPage() {
             </span>
           </li>
         </ul>
+      </div>
+
+      {/* CTA to Checklist */}
+      <div className="bg-linear-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-lg p-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-foreground mb-1">
+              Siap Mulai Persiapan?
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Buat checklist detail berdasarkan planning di atas untuk
+              memastikan semua persiapan terlaksana dengan baik.
+            </p>
+          </div>
+          <Link href="/dashboard/checklist">
+            <Button className="bg-primary hover:bg-primary/90 text-white font-medium shadow-md gap-2 whitespace-nowrap">
+              Lanjut ke Checklist
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

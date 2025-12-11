@@ -47,7 +47,10 @@ export const fetchChecklist = createAsyncThunk(
 
 export const addChecklistTask = createAsyncThunk(
   "checklist/addTask",
-  async (taskData: Omit<ChecklistTask, "id" | "created_at">, { rejectWithValue }) => {
+  async (
+    taskData: Omit<ChecklistTask, "id" | "created_at">,
+    { rejectWithValue }
+  ) => {
     try {
       const response = await axiosClient.post("/checklist", taskData);
       return response.data;
@@ -67,9 +70,13 @@ export const updateChecklistTask = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
+      console.log("updateChecklistTask - ID:", id);
+      console.log("updateChecklistTask - Data:", JSON.stringify(data, null, 2));
       const response = await axiosClient.patch(`/checklist/${id}`, data);
+      console.log("updateChecklistTask - Response:", response.data);
       return response.data;
     } catch (error) {
+      console.error("updateChecklistTask - Error:", error);
       return rejectWithValue(
         (error as { response?: { data?: { error?: string } } }).response?.data
           ?.error || "Failed to update task"
@@ -199,7 +206,14 @@ const checklistSlice = createSlice({
       })
       .addCase(generateDefaultTemplate.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        // Response bisa berupa { addedCount, tasks } atau array langsung
+        if (action.payload.tasks && Array.isArray(action.payload.tasks)) {
+          // Jika response berupa { addedCount, tasks }
+          state.list = [...state.list, ...action.payload.tasks];
+        } else if (Array.isArray(action.payload)) {
+          // Jika response berupa array langsung (backward compatibility)
+          state.list = action.payload;
+        }
         state.templateGenerated = true;
       })
       .addCase(generateDefaultTemplate.rejected, (state, action) => {

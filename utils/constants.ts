@@ -147,37 +147,130 @@ export const PLANNING_PHASES = [
     title: "Fase 5 — H+1 sampai H+7",
     description: "Pasca acara dan follow-up",
     estimatedTime: "H+1 sampai H+7",
-    milestones: [
-      "Pengembalian box hantaran",
-      "Follow-up vendor (opsional)",
-    ],
+    milestones: ["Pengembalian box hantaran", "Follow-up vendor (opsional)"],
   },
 ];
 
 // Default Checklist Template
 export const DEFAULT_CHECKLIST_TEMPLATE = [
   // Phase 1
-  { title: "Konsultasi awal dengan Wedding Planner", category: "vendor", timeline_phase: "phase_1", priority: "high" },
-  { title: "Fiksasi jumlah tamu", category: "administration", timeline_phase: "phase_1", priority: "high" },
-  { title: "Fitting awal baju pengantin", category: "fashion", timeline_phase: "phase_1", priority: "high" },
-  { title: "Persiapan berkas KUA", category: "administration", timeline_phase: "phase_1", priority: "high" },
-  { title: "Test food (opsional)", category: "vendor", timeline_phase: "phase_1", priority: "medium" },
-  { title: "Pesan undangan fisik", category: "documentation", timeline_phase: "phase_1", priority: "high" },
-  { title: "Pesan souvenir", category: "gifts", timeline_phase: "phase_1", priority: "medium" },
-  { title: "Persiapkan seserahan", category: "gifts", timeline_phase: "phase_1", priority: "high" },
-  { title: "Pre-wedding photo shoot", category: "prewedd", timeline_phase: "phase_1", priority: "medium" },
-  { title: "Meeting keluarga", category: "family", timeline_phase: "phase_1", priority: "high" },
-  { title: "Pemesanan cincin nikah/mahar", category: "gifts", timeline_phase: "phase_1", priority: "high" },
+  {
+    title: "Konsultasi awal dengan Wedding Planner",
+    category: "vendor",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Fiksasi jumlah tamu",
+    category: "administration",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Fitting awal baju pengantin",
+    category: "fashion",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Persiapan berkas KUA",
+    category: "administration",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Test food (opsional)",
+    category: "vendor",
+    timeline_phase: "phase_1",
+    priority: "medium",
+  },
+  {
+    title: "Pesan undangan fisik",
+    category: "documentation",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Pesan souvenir",
+    category: "gifts",
+    timeline_phase: "phase_1",
+    priority: "medium",
+  },
+  {
+    title: "Persiapkan seserahan",
+    category: "gifts",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Pre-wedding photo shoot",
+    category: "prewedd",
+    timeline_phase: "phase_1",
+    priority: "medium",
+  },
+  {
+    title: "Meeting keluarga",
+    category: "family",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
+  {
+    title: "Pemesanan cincin nikah/mahar",
+    category: "gifts",
+    timeline_phase: "phase_1",
+    priority: "high",
+  },
   // Phase 2
-  { title: "Technical meeting semua vendor", category: "vendor", timeline_phase: "phase_2", priority: "high" },
-  { title: "Pengiriman hantaran untuk dihias", category: "gifts", timeline_phase: "phase_2", priority: "high" },
-  { title: "Fitting final pengantin & orang tua", category: "fashion", timeline_phase: "phase_2", priority: "high" },
+  {
+    title: "Technical meeting semua vendor",
+    category: "vendor",
+    timeline_phase: "phase_2",
+    priority: "high",
+  },
+  {
+    title: "Pengiriman hantaran untuk dihias",
+    category: "gifts",
+    timeline_phase: "phase_2",
+    priority: "high",
+  },
+  {
+    title: "Fitting final pengantin & orang tua",
+    category: "fashion",
+    timeline_phase: "phase_2",
+    priority: "high",
+  },
   // Phase 3
-  { title: "Perawatan/grooming", category: "fashion", timeline_phase: "phase_3", priority: "medium" },
-  { title: "Pengambilan box hantaran", category: "gifts", timeline_phase: "phase_3", priority: "high" },
-  { title: "Finalisasi dan penyebaran undangan", category: "documentation", timeline_phase: "phase_3", priority: "high" },
+  {
+    title: "Perawatan/grooming",
+    category: "fashion",
+    timeline_phase: "phase_3",
+    priority: "medium",
+  },
+  {
+    title: "Pengambilan box hantaran",
+    category: "gifts",
+    timeline_phase: "phase_3",
+    priority: "high",
+  },
+  {
+    title: "Finalisasi dan penyebaran undangan",
+    category: "documentation",
+    timeline_phase: "phase_3",
+    priority: "high",
+  },
   // Phase 4
-  { title: "Wedding day checklist", category: "ceremony", timeline_phase: "phase_4", priority: "high", description: "Isi detail checklist hari-H" },
+  {
+    title: "Wedding day checklist",
+    category: "ceremony",
+    timeline_phase: "phase_4",
+    priority: "high",
+    description: "Isi detail checklist hari-H",
+  },
   // Phase 5
-  { title: "Pengembalian box hantaran", category: "gifts", timeline_phase: "phase_5", priority: "medium" },
+  {
+    title: "Pengembalian box hantaran",
+    category: "gifts",
+    timeline_phase: "phase_5",
+    priority: "medium",
+  },
 ];

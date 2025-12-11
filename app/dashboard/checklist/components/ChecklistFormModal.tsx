@@ -92,7 +92,9 @@ export function ChecklistFormModal({
             {item ? "Edit" : "Tambah"} Task
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {item ? "Update task checklist" : "Tambahkan task baru ke checklist"}
+            {item
+              ? "Update task checklist"
+              : "Tambahkan task baru ke checklist"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

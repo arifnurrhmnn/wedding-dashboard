@@ -17,7 +17,10 @@ import {
   Clock,
   CheckCircle2,
   Sparkles,
+  Calendar,
+  Info,
 } from "lucide-react";
+import Link from "next/link";
 import { ChecklistTable } from "./components/ChecklistTable";
 import { ChecklistFormModal } from "./components/ChecklistFormModal";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
@@ -34,24 +37,41 @@ import { toast } from "sonner";
 
 export default function ChecklistPage() {
   const dispatch = useAppDispatch();
-  const { list, loading, templateGenerated } = useAppSelector(
-    (state) => state.checklist
-  );
+  const { list, loading } = useAppSelector((state) => state.checklist);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ChecklistTask | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ChecklistTask | null>(null);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchChecklist());
   }, [dispatch]);
 
+  const openGenerateDialog = () => {
+    setGenerateDialogOpen(true);
+  };
+
   const handleGenerateTemplate = async () => {
     try {
-      await dispatch(generateDefaultTemplate()).unwrap();
-      toast.success("Template berhasil digenerate!");
+      const result = await dispatch(generateDefaultTemplate()).unwrap();
+      const addedCount = result?.addedCount || 0;
+
+      // Fetch ulang data untuk memastikan list terupdate dengan benar
+      await dispatch(fetchChecklist()).unwrap();
+
+      setGenerateDialogOpen(false);
+
+      if (addedCount > 0) {
+        toast.success(
+          `Berhasil menambahkan ${addedCount} task baru ke checklist!`
+        );
+      } else {
+        toast.info("Semua task template sudah ada di checklist Anda.");
+      }
     } catch {
-      toast.error("Template sudah ada atau terjadi kesalahan");
+      setGenerateDialogOpen(false);
+      toast.error("Terjadi kesalahan saat generate template");
     }
   };
 
@@ -69,18 +89,30 @@ export default function ChecklistPage() {
     data: Omit<ChecklistTask, "id" | "created_at">
   ) => {
     try {
+      // Filter out fields that shouldn't be sent (unique_id, created_at, updated_at, etc.)
+      const cleanData = {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        timeline_phase: data.timeline_phase,
+        due_date: data.due_date || undefined,
+        status: data.status,
+        priority: data.priority,
+      };
+
       if (editingItem) {
         await dispatch(
-          updateChecklistTask({ id: editingItem.id, data })
+          updateChecklistTask({ id: editingItem.id, data: cleanData })
         ).unwrap();
         toast.success("Task berhasil diupdate!");
       } else {
-        await dispatch(addChecklistTask(data)).unwrap();
+        await dispatch(addChecklistTask(cleanData)).unwrap();
         toast.success("Task berhasil ditambahkan!");
       }
       setIsModalOpen(false);
       setEditingItem(null);
-    } catch {
+    } catch (error) {
+      console.error("Submit error:", error);
       toast.error("Terjadi kesalahan!");
     }
   };
@@ -143,16 +175,14 @@ export default function ChecklistPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {!templateGenerated && list.length === 0 && (
-            <Button
-              onClick={handleGenerateTemplate}
-              className="h-10 bg-blue-500 hover:bg-blue-600 text-white font-medium shadow-md gap-2"
-              disabled={loading}
-            >
-              <Sparkles className="h-4 w-4" />
-              Generate Template
-            </Button>
-          )}
+          <Button
+            onClick={openGenerateDialog}
+            className="h-10 bg-blue-500 hover:bg-blue-600 text-white font-medium shadow-md gap-2"
+            disabled={loading}
+          >
+            <Sparkles className="h-4 w-4" />
+            Generate Template
+          </Button>
           <Button
             onClick={handleAdd}
             className="h-10 bg-primary hover:bg-primary/90 text-white font-medium shadow-md gap-2"
@@ -162,6 +192,42 @@ export default function ChecklistPage() {
           </Button>
         </div>
       </div>
+
+      {/* Banner Edukasi - tampil hanya bila task kosong */}
+      {list.length === 0 && !loading && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="p-3 bg-blue-500/20 rounded-lg shrink-0">
+              <Info className="h-6 w-6 text-blue-400" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <h3 className="font-semibold text-foreground">
+                Belum ada task yang dibuat
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Gunakan template rekomendasi berdasarkan{" "}
+                <strong>Planning</strong> untuk memulai checklist Anda, atau
+                buat task manual sesuai kebutuhan.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                onClick={openGenerateDialog}
+                className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Generate Template
+              </Button>
+              <Link href="/dashboard/planning">
+                <Button variant="outline" className="gap-2 border-blue-500/30">
+                  <Calendar className="h-4 w-4" />
+                  Lihat Planning
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Progress Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -260,6 +326,63 @@ export default function ChecklistPage() {
         loading={loading}
       />
 
+      {/* Generate Template Dialog */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] border-border shadow-2xl bg-card">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <Sparkles className="h-5 w-5" />
+              Generate Template Checklist?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-muted-foreground space-y-3 pt-2 px-6">
+            <p className="text-sm">
+              Template ini adalah rekomendasi berdasarkan{" "}
+              <strong>Planning</strong> dari H-180 hingga H+7. Template akan
+              menambah task baru yang belum ada di checklist kamu.
+            </p>
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 space-y-2">
+              <div className="font-semibold text-foreground text-sm">
+                ⚠️ Catatan Penting:
+              </div>
+              <ul className="text-sm space-y-1 ml-4 list-disc">
+                <li>Tidak akan menghapus task yang sudah kamu buat</li>
+                <li>Tidak akan menduplikasi task yang sudah ada</li>
+                <li>Task baru hanya ditambahkan jika belum pernah ada</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
+            <Link href="/dashboard/planning" className="flex-1">
+              <Button
+                variant="outline"
+                className="w-full border-border hover:bg-secondary gap-2"
+                onClick={() => setGenerateDialogOpen(false)}
+              >
+                <Calendar className="h-4 w-4" />
+                Lihat Planning Dulu
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              onClick={() => setGenerateDialogOpen(false)}
+              className="flex-1 border-border hover:bg-secondary"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleGenerateTemplate}
+              disabled={loading}
+              className="flex-1 bg-primary hover:bg-primary/90 text-white font-medium shadow-md gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Generate Sekarang
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px] border-border shadow-2xl bg-card">
           <DialogHeader>

@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { ChecklistTask } from "@/redux/slices/checklistSlice";
 import { createColumns } from "./ChecklistColumns";
 import {
@@ -80,9 +80,12 @@ export function ChecklistTable({
     },
   });
 
-  const categoryFilter = columnFilters.find((f) => f.id === "category")?.value as string;
-  const statusFilter = columnFilters.find((f) => f.id === "status")?.value as string;
-  const phaseFilter = columnFilters.find((f) => f.id === "timeline_phase")?.value as string;
+  const categoryFilter = columnFilters.find((f) => f.id === "category")
+    ?.value as string;
+  const statusFilter = columnFilters.find((f) => f.id === "status")
+    ?.value as string;
+  const phaseFilter = columnFilters.find((f) => f.id === "timeline_phase")
+    ?.value as string;
 
   return (
     <div className="space-y-4">
@@ -112,7 +115,9 @@ export function ChecklistTable({
           <Select
             value={categoryFilter || "all"}
             onValueChange={(value) =>
-              table.getColumn("category")?.setFilterValue(value === "all" ? undefined : value)
+              table
+                .getColumn("category")
+                ?.setFilterValue(value === "all" ? undefined : value)
             }
           >
             <SelectTrigger className="w-full sm:w-48 h-10 bg-input border-border">
@@ -132,7 +137,9 @@ export function ChecklistTable({
           <Select
             value={statusFilter || "all"}
             onValueChange={(value) =>
-              table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)
+              table
+                .getColumn("status")
+                ?.setFilterValue(value === "all" ? undefined : value)
             }
           >
             <SelectTrigger className="w-full sm:w-40 h-10 bg-input border-border">
@@ -152,7 +159,9 @@ export function ChecklistTable({
           <Select
             value={phaseFilter || "all"}
             onValueChange={(value) =>
-              table.getColumn("timeline_phase")?.setFilterValue(value === "all" ? undefined : value)
+              table
+                .getColumn("timeline_phase")
+                ?.setFilterValue(value === "all" ? undefined : value)
             }
           >
             <SelectTrigger className="w-full sm:w-52 h-10 bg-input border-border">
@@ -172,109 +181,112 @@ export function ChecklistTable({
 
       {/* Table */}
       <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-border">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    style={{ width: header.getSize() }}
-                    className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground bg-muted/50"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+        <div className="px-4">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
-                  key={row.id}
-                  className="border-border hover:bg-muted/50 transition-colors"
+                  key={headerGroup.id}
+                  className="border-b-2 border-border bg-muted/30 hover:bg-muted/30"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-4 py-3 align-middle">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider"
+                      style={{
+                        width:
+                          header.getSize() !== Number.MAX_SAFE_INTEGER
+                            ? header.getSize()
+                            : undefined,
+                        maxWidth: header.column.columnDef.size,
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-48 text-center"
-                >
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <p className="text-muted-foreground">Tidak ada task</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="border-b border-border hover:bg-muted/30 transition-colors duration-150"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-4"
+                        style={{
+                          width:
+                            cell.column.getSize() !== Number.MAX_SAFE_INTEGER
+                              ? cell.column.getSize()
+                              : undefined,
+                          maxWidth: cell.column.columnDef.size,
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-32 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <p className="text-base font-medium">Tidak ada data.</p>
+                      <p className="text-sm">
+                        Mulai tambahkan task checklist Anda.
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
-      {table.getPageCount() > 0 && (
-        <div className="flex items-center justify-between px-2">
-          <div className="text-sm text-muted-foreground">
-            Menampilkan{" "}
-            <span className="font-medium text-foreground">
-              {table.getState().pagination.pageIndex *
-                table.getState().pagination.pageSize +
-                1}
-            </span>{" "}
-            -{" "}
-            <span className="font-medium text-foreground">
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) *
-                  table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )}
-            </span>{" "}
-            dari{" "}
-            <span className="font-medium text-foreground">
-              {table.getFilteredRowModel().rows.length}
-            </span>{" "}
-            task
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-9 px-3"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <div className="text-sm font-medium text-foreground">
-              Halaman {table.getState().pagination.pageIndex + 1} dari{" "}
-              {table.getPageCount()}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-9 px-3"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+      <div className="flex items-center justify-between px-2">
+        <p className="text-sm text-muted-foreground">
+          Halaman {table.getState().pagination.pageIndex + 1} dari{" "}
+          {table.getPageCount()}
+        </p>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
+          >
+            Next
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
