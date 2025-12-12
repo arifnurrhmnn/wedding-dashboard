@@ -20,6 +20,11 @@ import { useState } from "react";
 
 const menuItems = [
   {
+    title: "Kalender",
+    href: "/dashboard/kalender",
+    icon: Calendar,
+  },
+  {
     title: "Tamu Undangan",
     href: "/dashboard/tamu-undangan",
     icon: Users,
@@ -43,7 +48,7 @@ const weddingPlanGroup = {
     {
       title: "Planning",
       href: "/dashboard/planning",
-      icon: Calendar,
+      icon: CheckSquare,
     },
     {
       title: "Checklist",

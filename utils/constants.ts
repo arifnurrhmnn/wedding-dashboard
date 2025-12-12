@@ -55,6 +55,33 @@ export const SOUVENIR_STATUS_OPTIONS = [
   { value: "Sudah Dibeli", label: "Sudah Dibeli" },
 ];
 
+// Schedule/Calendar Options
+export const SCHEDULE_CATEGORY_OPTIONS = [
+  { value: "Vendor Meeting", label: "Vendor Meeting" },
+  { value: "Payment Reminder", label: "Payment Reminder" },
+  { value: "Fitting", label: "Fitting" },
+  { value: "Family Event", label: "Family Event" },
+  { value: "Important Day", label: "Important Day" },
+  { value: "Custom", label: "Custom" },
+];
+
+export const SCHEDULE_REMINDER_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "1h", label: "1 hour before" },
+  { value: "3h", label: "3 hours before" },
+  { value: "1d", label: "1 day before" },
+  { value: "3d", label: "3 days before" },
+];
+
+export const SCHEDULE_CATEGORY_COLORS: Record<string, string> = {
+  "Vendor Meeting": "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  "Payment Reminder": "bg-red-500/15 text-red-400 border-red-500/30",
+  Fitting: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  "Family Event": "bg-green-500/15 text-green-400 border-green-500/30",
+  "Important Day": "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  Custom: "bg-gray-500/15 text-gray-400 border-gray-500/30",
+};
+
 // Checklist Options
 export const CHECKLIST_CATEGORY_OPTIONS = [
   { value: "documentation", label: "Dokumentasi" },

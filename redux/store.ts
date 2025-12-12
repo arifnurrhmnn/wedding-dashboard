@@ -3,6 +3,7 @@ import guestReducer from "./slices/guestSlice";
 import seserahanReducer from "./slices/seserahanSlice";
 import souvenirReducer from "./slices/souvenirSlice";
 import checklistReducer from "./slices/checklistSlice";
+import scheduleReducer from "./slices/scheduleSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     seserahan: seserahanReducer,
     souvenir: souvenirReducer,
     checklist: checklistReducer,
+    schedules: scheduleReducer,
   },
 });
 
