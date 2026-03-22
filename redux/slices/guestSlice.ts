@@ -11,6 +11,7 @@ export interface Guest {
   qty: number;
   gift_type?: string | null;
   gift_value?: string | null;
+  is_invited?: boolean | null;
   created_at?: string;
 }
 
@@ -123,6 +124,15 @@ const guestSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+    setGuestInvited: (
+      state,
+      action: PayloadAction<{ id: string; is_invited: boolean }>
+    ) => {
+      const index = state.list.findIndex((g) => g.id === action.payload.id);
+      if (index !== -1) {
+        state.list[index].is_invited = action.payload.is_invited;
+      }
+    },
   },
   extraReducers: (builder) => {
     // Fetch Guests
@@ -188,5 +198,5 @@ const guestSlice = createSlice({
   },
 });
 
-export const { setList, setLoading, setError } = guestSlice.actions;
+export const { setList, setLoading, setError, setGuestInvited } = guestSlice.actions;
 export default guestSlice.reducer;

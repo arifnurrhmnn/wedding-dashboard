@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ChevronLeft,
   GiftIcon,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -58,6 +59,11 @@ const tamuUndanganGroup = {
       title: "Daftar Tamu",
       href: "/dashboard/tamu-undangan",
       icon: Users,
+    },
+    {
+      title: "Undangan Tamu",
+      href: "/dashboard/undangan-tamu",
+      icon: Mail,
     },
     {
       title: "Gift Tamu",
