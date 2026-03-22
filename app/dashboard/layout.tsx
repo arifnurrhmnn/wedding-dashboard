@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 
 export default function DashboardLayout({
@@ -9,7 +8,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [isMinimized, setIsMinimized] = useState(() => {
     // Initialize from localStorage on mount
     if (typeof window !== "undefined") {
@@ -17,13 +15,6 @@ export default function DashboardLayout({
     }
     return false;
   });
-
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (isLoggedIn !== "true") {
-      router.push("/login");
-    }
-  }, [router]);
 
   const toggleSidebar = () => {
     const newState = !isMinimized;

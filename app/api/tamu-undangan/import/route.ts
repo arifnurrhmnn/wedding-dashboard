@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const { data: guestsData } = body;
 
@@ -82,6 +89,7 @@ export async function POST(request: NextRequest) {
                 qty: parseInt(guest.qty) || 1,
                 gift_type: guest.gift_type || null,
                 gift_value: guest.gift_value || null,
+                user_id: user.id,
               });
 
             if (insertError) {
@@ -103,6 +111,7 @@ export async function POST(request: NextRequest) {
               qty: parseInt(guest.qty) || 1,
               gift_type: guest.gift_type || null,
               gift_value: guest.gift_value || null,
+              user_id: user.id,
             });
 
           if (insertError) {

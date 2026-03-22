@@ -6,39 +6,79 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LOGIN_CREDENTIALS } from "@/utils/constants";
 import { Leaf, Heart } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (isLoggedIn === "true") {
-      router.push("/dashboard/tamu-undangan");
-    }
+    const checkSession = async () => {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        router.push("/dashboard/tamu-undangan");
+      }
+    };
+    checkSession();
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      if (
-        username === LOGIN_CREDENTIALS.username &&
-        password === LOGIN_CREDENTIALS.password
-      ) {
-        localStorage.setItem("isLoggedIn", "true");
-        toast.success("Login berhasil!");
-        router.push("/dashboard/tamu-undangan");
-      } else {
-        toast.error("Username atau password salah!");
-        setLoading(false);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.code === "email_not_confirmed") {
+          toast.error(
+            "Email belum dikonfirmasi. Hubungi admin untuk mengaktifkan akun Anda."
+          );
+        } else {
+          toast.error("Email atau password salah!");
+        }
+        return;
       }
-    }, 500);
+
+      // Cek status user setelah login
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profile?.status === "pending") {
+        router.push("/pending");
+        return;
+      }
+
+      if (profile?.status === "rejected") {
+        await supabase.auth.signOut();
+        toast.error(
+          "Akun kamu telah ditolak. Hubungi admin untuk informasi lebih lanjut."
+        );
+        return;
+      }
+
+      toast.success("Login berhasil!");
+      router.push("/dashboard/tamu-undangan");
+      router.refresh();
+    } catch {
+      toast.error("Terjadi kesalahan. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -92,20 +132,68 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Google Login */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 border-border hover:bg-muted/50 font-medium transition-all duration-200 gap-3"
+            onClick={async () => {
+              const supabase = createSupabaseBrowserClient();
+              await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback`,
+                },
+              });
+            }}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Masuk dengan Google
+          </Button>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-3 text-muted-foreground">
+                atau masuk dengan email
+              </span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label
-                htmlFor="username"
+                htmlFor="email"
                 className="text-sm font-medium text-foreground"
               >
-                Username
+                Email
               </Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="Masukkan username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Masukkan email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="h-12 bg-card border-border focus:border-primary focus:ring-primary/20 text-foreground placeholder:text-muted-foreground transition-all"
                 required
               />
@@ -143,18 +231,18 @@ export default function LoginPage() {
                 "Masuk"
               )}
             </Button>
-
-            <div className="text-center text-sm text-muted-foreground">
-              <p>
-                Username:{" "}
-                <span className="font-medium text-foreground">admin</span>
-              </p>
-              <p>
-                Password:{" "}
-                <span className="font-medium text-foreground">admin123</span>
-              </p>
-            </div>
           </form>
+
+          {/* Link ke Daftar */}
+          <p className="text-center text-sm text-muted-foreground">
+            Belum punya akun?{" "}
+            <Link
+              href="/daftar"
+              className="text-primary font-medium hover:underline transition-all"
+            >
+              Daftar gratis sekarang
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -1,15 +1,21 @@
-import { supabase } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { data, error } = await supabase
       .from("checklist")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-
     return NextResponse.json(data);
   } catch (error) {
     console.error("Error fetching checklist:", error);
@@ -22,6 +28,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const {
       title,
@@ -51,18 +64,18 @@ export async function POST(request: Request) {
           due_date,
           status: status || "todo",
           priority: priority || "medium",
+          user_id: user.id,
         },
       ])
       .select()
       .single();
 
     if (error) throw error;
-
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error creating task:", error);
+    console.error("Error creating checklist:", error);
     return NextResponse.json(
-      { error: "Failed to create task" },
+      { error: "Failed to create checklist" },
       { status: 500 }
     );
   }

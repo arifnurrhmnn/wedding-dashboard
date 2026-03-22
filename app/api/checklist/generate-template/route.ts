@@ -1,13 +1,21 @@
-import { supabase } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { DEFAULT_CHECKLIST_TEMPLATE } from "@/utils/constants";
 
 export async function POST() {
   try {
-    // Fetch all existing tasks
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Fetch all existing tasks for this user
     const { data: existingTasks, error: fetchError } = await supabase
       .from("checklist")
-      .select("title, category, timeline_phase");
+      .select("title, category, timeline_phase")
+      .eq("user_id", user.id);
 
     if (fetchError) throw fetchError;
 
@@ -37,10 +45,10 @@ export async function POST() {
       });
     }
 
-    // Insert only new tasks
+    // Insert only new tasks with user_id
     const { data, error } = await supabase
       .from("checklist")
-      .insert(newTasks)
+      .insert(newTasks.map((task) => ({ ...task, user_id: user.id })))
       .select();
 
     if (error) throw error;

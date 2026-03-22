@@ -14,12 +14,14 @@ import {
   ChevronLeft,
   GiftIcon,
   Mail,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 const menuItems = [
   {
@@ -208,11 +211,42 @@ interface SidebarProps {
 export function Sidebar({ isMinimized, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [userName, setUserName] = useState("Admin");
+  const [userEmail, setUserEmail] = useState("");
+  const [userInitial, setUserInitial] = useState("A");
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        const nama =
+          user.user_metadata?.nama || user.email?.split("@")[0] || "Admin";
+        setUserName(nama);
+        setUserEmail(user.email || "");
+        setUserInitial(nama.charAt(0).toUpperCase());
+
+        // Cek role dari profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role, avatar_url")
+          .eq("id", user.id)
+          .single();
+        setIsAdmin(profile?.role === "admin");
+        setUserAvatar(
+          profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null
+        );
+      }
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
     toast.success("Logout berhasil");
     router.push("/login");
+    router.refresh();
   };
 
   return (
@@ -280,15 +314,27 @@ export function Sidebar({ isMinimized, onToggle }: SidebarProps) {
       {!isMinimized && (
         <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-sm">A</span>
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+              {userAvatar ? (
+                <Image
+                  src={userAvatar}
+                  alt={userName}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <span className="text-primary font-bold text-sm">
+                  {userInitial}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                Admin
+                {userName}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                admin@wedding.com
+                {userEmail}
               </p>
             </div>
           </div>
@@ -358,6 +404,55 @@ export function Sidebar({ isMinimized, onToggle }: SidebarProps) {
             pathname={pathname}
             isMinimized={isMinimized}
           />
+
+          {/* Admin-only: Users Menu */}
+          {isAdmin && (
+            <>
+              {/* Divider */}
+              {!isMinimized && (
+                <div className="pt-2 pb-1">
+                  <p className="px-3 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
+                    Admin
+                  </p>
+                </div>
+              )}
+              {isMinimized ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href="/dashboard/users"
+                        className={cn(
+                          "flex items-center justify-center rounded-lg p-2.5 transition-all duration-150",
+                          pathname === "/dashboard/users"
+                            ? "bg-primary/20 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <ShieldCheck className="h-5 w-5" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">
+                      <p>Users</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <Link
+                  href="/dashboard/users"
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                    pathname === "/dashboard/users"
+                      ? "bg-primary/20 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="truncate">Users</span>
+                </Link>
+              )}
+            </>
+          )}
         </nav>
       </div>
 
