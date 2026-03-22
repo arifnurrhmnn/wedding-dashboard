@@ -198,5 +198,6 @@ const guestSlice = createSlice({
   },
 });
 
-export const { setList, setLoading, setError, setGuestInvited } = guestSlice.actions;
+export const { setList, setLoading, setError, setGuestInvited } =
+  guestSlice.actions;
 export default guestSlice.reducer;

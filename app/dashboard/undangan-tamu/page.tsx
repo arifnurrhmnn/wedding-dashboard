@@ -39,7 +39,11 @@ import { cn } from "@/lib/utils";
 const safeNama = (nama: string) => nama.replace(/\./g, ".\u200B");
 
 const WA_TEMPLATE = (nama: string) =>
-  `Assalamu'alaikum Wr. Wb.\n\nYth. *${safeNama(nama)} & Partner*\n\nDengan penuh rasa syukur dan tanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/I untuk hadir dan turut merayakan hari bahagia pernikahan kami:\n\n*Dina Reidina Risdiani & Arif Nur Rohman*\n\nUntuk detail rangkaian acara, lokasi, serta informasi lain dapat diakses melalui tautan berikut:\n\nhttps://example.id/arif-dina/?to=${encodeURIComponent(nama)}\n\nMerupakan kehormatan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberi doa restu. Mohon maaf jika undangan ini kami sampaikan secara digital.\n\nLink Lokasi (Google Maps):\nhttps://maps.app.goo.gl/example\n\nAtas waktu dan perhatiannya, kami ucapkan terima kasih.\n\nWassalamu'alaikum Wr. Wb.`;
+  `Assalamu'alaikum Wr. Wb.\n\nYth. *${safeNama(
+    nama
+  )} & Partner*\n\nDengan penuh rasa syukur dan tanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/I untuk hadir dan turut merayakan hari bahagia pernikahan kami:\n\n*Dina Reidina Risdiani & Arif Nur Rohman*\n\nUntuk detail rangkaian acara, lokasi, serta informasi lain dapat diakses melalui tautan berikut:\n\nhttps://example.id/arif-dina/?to=${encodeURIComponent(
+    nama
+  )}\n\nMerupakan kehormatan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberi doa restu. Mohon maaf jika undangan ini kami sampaikan secara digital.\n\nLink Lokasi (Google Maps):\nhttps://maps.app.goo.gl/example\n\nAtas waktu dan perhatiannya, kami ucapkan terima kasih.\n\nWassalamu'alaikum Wr. Wb.`;
 
 const KATEGORI_BADGE: Record<string, string> = {
   "Keluarga Inti": "bg-blue-500/15 text-blue-400 border-blue-500/30",
@@ -177,7 +181,9 @@ export default function UndanganTamuPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Tamu</p>
-              <p className="text-2xl font-bold text-foreground">{list.length}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {list.length}
+              </p>
             </div>
           </div>
           <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-4 flex-1">
