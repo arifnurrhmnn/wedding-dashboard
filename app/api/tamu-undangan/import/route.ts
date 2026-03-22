@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
                 skala_prioritas: guest.skala_prioritas || "",
                 tipe_undangan: guest.tipe_undangan || "",
                 qty: parseInt(guest.qty) || 1,
+                gift_type: guest.gift_type || null,
+                gift_value: guest.gift_value || null,
               })
               .eq("unique_id", guest.unique_id);
 
@@ -78,6 +80,8 @@ export async function POST(request: NextRequest) {
                 skala_prioritas: guest.skala_prioritas || "",
                 tipe_undangan: guest.tipe_undangan || "",
                 qty: parseInt(guest.qty) || 1,
+                gift_type: guest.gift_type || null,
+                gift_value: guest.gift_value || null,
               });
 
             if (insertError) {
@@ -97,6 +101,8 @@ export async function POST(request: NextRequest) {
               skala_prioritas: guest.skala_prioritas || "",
               tipe_undangan: guest.tipe_undangan || "",
               qty: parseInt(guest.qty) || 1,
+              gift_type: guest.gift_type || null,
+              gift_value: guest.gift_value || null,
             });
 
           if (insertError) {

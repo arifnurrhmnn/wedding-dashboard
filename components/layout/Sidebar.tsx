@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronLeft,
+  GiftIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -38,11 +39,6 @@ const menuItems = [
     icon: Calendar,
   },
   {
-    title: "Tamu Undangan",
-    href: "/dashboard/tamu-undangan",
-    icon: Users,
-  },
-  {
     title: "Seserahan",
     href: "/dashboard/seserahan",
     icon: Gift,
@@ -53,6 +49,23 @@ const menuItems = [
     icon: Package,
   },
 ];
+
+const tamuUndanganGroup = {
+  title: "Tamu Undangan",
+  icon: Users,
+  submenus: [
+    {
+      title: "Daftar Tamu",
+      href: "/dashboard/tamu-undangan",
+      icon: Users,
+    },
+    {
+      title: "Gift Tamu",
+      href: "/dashboard/gift-tamu",
+      icon: GiftIcon,
+    },
+  ],
+};
 
 const weddingPlanGroup = {
   title: "Wedding Plan",
@@ -71,21 +84,32 @@ const weddingPlanGroup = {
   ],
 };
 
-function WeddingPlanGroup({
+interface GroupConfig {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  submenus: {
+    title: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[];
+}
+
+function MenuGroup({
+  group,
   pathname,
   isMinimized,
 }: {
+  group: GroupConfig;
   pathname: string;
   isMinimized: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const GroupIcon = weddingPlanGroup.icon;
-  const isAnySubmenuActive = weddingPlanGroup.submenus.some(
+  const GroupIcon = group.icon;
+  const isAnySubmenuActive = group.submenus.some(
     (submenu) => pathname === submenu.href
   );
 
   if (isMinimized) {
-    // Show dropdown menu with submenus when minimized
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -101,7 +125,7 @@ function WeddingPlanGroup({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start" className="w-48">
-          {weddingPlanGroup.submenus.map((submenu) => {
+          {group.submenus.map((submenu) => {
             const SubmenuIcon = submenu.icon;
             const isActive = pathname === submenu.href;
             return (
@@ -126,7 +150,6 @@ function WeddingPlanGroup({
 
   return (
     <div className="space-y-1">
-      {/* Group Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
@@ -137,18 +160,16 @@ function WeddingPlanGroup({
         )}
       >
         <GroupIcon className="h-4 w-4" />
-        <span className="flex-1 text-left">{weddingPlanGroup.title}</span>
+        <span className="flex-1 text-left">{group.title}</span>
         {isExpanded ? (
           <ChevronDown className="h-4 w-4" />
         ) : (
           <ChevronRight className="h-4 w-4" />
         )}
       </button>
-
-      {/* Submenus */}
       {isExpanded && (
         <div className="ml-4 space-y-1 border-l-2 border-border pl-3">
-          {weddingPlanGroup.submenus.map((submenu) => {
+          {group.submenus.map((submenu) => {
             const SubmenuIcon = submenu.icon;
             const isActive = pathname === submenu.href;
             return (
@@ -318,8 +339,19 @@ export function Sidebar({ isMinimized, onToggle }: SidebarProps) {
             );
           })}
 
+          {/* Tamu Undangan Group */}
+          <MenuGroup
+            group={tamuUndanganGroup}
+            pathname={pathname}
+            isMinimized={isMinimized}
+          />
+
           {/* Wedding Plan Group */}
-          <WeddingPlanGroup pathname={pathname} isMinimized={isMinimized} />
+          <MenuGroup
+            group={weddingPlanGroup}
+            pathname={pathname}
+            isMinimized={isMinimized}
+          />
         </nav>
       </div>
 

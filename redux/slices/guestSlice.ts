@@ -9,6 +9,8 @@ export interface Guest {
   skala_prioritas: string;
   tipe_undangan: string;
   qty: number;
+  gift_type?: string | null;
+  gift_value?: string | null;
   created_at?: string;
 }
 

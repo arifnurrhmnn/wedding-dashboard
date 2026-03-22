@@ -6,6 +6,11 @@ export const KATEGORI_OPTIONS = [
   { value: "Tamu Orang Tua", label: "Tamu Orang Tua" },
 ];
 
+export const GIFT_TYPE_OPTIONS = [
+  { value: "uang", label: "Uang" },
+  { value: "kado", label: "Kado" },
+];
+
 export const SKALA_PRIORITAS_OPTIONS = [
   { value: "Wajib Hadir", label: "Wajib Hadir" },
   { value: "Penting", label: "Penting" },

@@ -32,6 +32,8 @@ interface ImportExportButtonsProps {
     skala_prioritas: string;
     tipe_undangan: string;
     qty: number;
+    gift_type?: string | null;
+    gift_value?: string | null;
   }>;
 }
 
@@ -76,6 +78,8 @@ export function ImportExportButtons({
       skala_prioritas: guest.skala_prioritas,
       tipe_undangan: guest.tipe_undangan,
       qty: guest.qty,
+      gift_type: guest.gift_type || "",
+      gift_value: guest.gift_value || "",
     }));
 
     const csv = Papa.unparse(csvData);
@@ -205,6 +209,8 @@ export function ImportExportButtons({
         skala_prioritas: "Wajib Hadir",
         tipe_undangan: "Digital",
         qty: 1,
+        gift_type: "",
+        gift_value: "",
       },
     ];
 
@@ -408,6 +414,13 @@ export function ImportExportButtons({
                 </li>
                 <li>
                   • <strong>qty</strong> (optional) - default: 1
+                </li>
+                <li>
+                  • <strong>gift_type</strong> (optional) - uang / kado
+                </li>
+                <li>
+                  • <strong>gift_value</strong> (optional) - nominal atau nama
+                  kado
                 </li>
               </ul>
               <Button

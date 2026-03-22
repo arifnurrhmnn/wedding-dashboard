@@ -23,7 +23,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { nama, kategori, skala_prioritas, tipe_undangan } = body;
+    const {
+      nama,
+      kategori,
+      skala_prioritas,
+      tipe_undangan,
+      qty,
+      gift_type,
+      gift_value,
+    } = body;
 
     if (!nama || !kategori || !skala_prioritas || !tipe_undangan) {
       return NextResponse.json(
@@ -34,7 +42,17 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from("tamu_undangan")
-      .insert([{ nama, kategori, skala_prioritas, tipe_undangan }])
+      .insert([
+        {
+          nama,
+          kategori,
+          skala_prioritas,
+          tipe_undangan,
+          qty: qty ?? 1,
+          gift_type: gift_type ?? null,
+          gift_value: gift_value ?? null,
+        },
+      ])
       .select()
       .single();
 
