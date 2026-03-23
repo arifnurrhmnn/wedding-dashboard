@@ -23,11 +23,6 @@ export const TIPE_UNDANGAN_OPTIONS = [
   { value: "Kabar", label: "Kabar" },
 ];
 
-export const LOGIN_CREDENTIALS = {
-  username: "admin",
-  password: "admin",
-};
-
 // Seserahan Options
 export const SESERAHAN_KATEGORI_OPTIONS = [
   { value: "Perlengkapan Ibadah", label: "Perlengkapan Ibadah" },

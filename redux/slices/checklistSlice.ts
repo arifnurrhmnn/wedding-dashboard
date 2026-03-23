@@ -70,13 +70,9 @@ export const updateChecklistTask = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log("updateChecklistTask - ID:", id);
-      console.log("updateChecklistTask - Data:", JSON.stringify(data, null, 2));
       const response = await axiosClient.patch(`/checklist/${id}`, data);
-      console.log("updateChecklistTask - Response:", response.data);
       return response.data;
     } catch (error) {
-      console.error("updateChecklistTask - Error:", error);
       return rejectWithValue(
         (error as { response?: { data?: { error?: string } } }).response?.data
           ?.error || "Failed to update task"

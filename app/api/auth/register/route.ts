@@ -26,10 +26,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cek apakah email sudah terdaftar
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const alreadyExists = existingUsers?.users?.some((u) => u.email === email);
-    if (alreadyExists) {
+    // Cek apakah email sudah terdaftar via profiles table (lebih efisien dari listUsers)
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingProfile) {
       return NextResponse.json(
         { error: "Email sudah terdaftar. Silakan login." },
         { status: 409 }

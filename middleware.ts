@@ -31,15 +31,15 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Redirect ke login jika akses dashboard tanpa session
+  // 1. Tidak ada session & akses dashboard → login
   if (!user && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Redirect jika sudah login dan akses /login atau /daftar
-  if (user && (pathname === "/login" || pathname === "/daftar")) {
+  // 2. Ada session → ambil profile SEKALI untuk semua pengecekan
+  if (user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("status")
@@ -48,60 +48,44 @@ export async function middleware(request: NextRequest) {
 
     const status = profile?.status;
 
-    if (status === "pending") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/pending";
-      return NextResponse.redirect(url);
-    }
-
-    if (status === "rejected") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/rejected";
-      return NextResponse.redirect(url);
-    }
-
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard/tamu-undangan";
-    return NextResponse.redirect(url);
-  }
-
-  // Cek status user jika mengakses dashboard
-  if (user && pathname.startsWith("/dashboard")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("status")
-      .eq("id", user.id)
-      .single();
-
-    const status = profile?.status;
-
-    // Jika pending → redirect ke /pending (kecuali sudah di sana)
-    if (status === "pending" && pathname !== "/pending") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/pending";
-      return NextResponse.redirect(url);
-    }
-
-    // Jika rejected → redirect ke /rejected (kecuali sudah di sana)
-    if (status === "rejected" && pathname !== "/rejected") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/rejected";
-      return NextResponse.redirect(url);
-    }
-  }
-
-  // Jika user sudah active tapi mencoba akses /pending atau /rejected → redirect ke dashboard
-  if (user && (pathname === "/pending" || pathname === "/rejected")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("status")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.status === "active") {
+    // User sudah login tapi akses /login atau /daftar
+    if (pathname === "/login" || pathname === "/daftar") {
+      if (status === "pending") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/pending";
+        return NextResponse.redirect(url);
+      }
+      if (status === "rejected") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/rejected";
+        return NextResponse.redirect(url);
+      }
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard/tamu-undangan";
       return NextResponse.redirect(url);
+    }
+
+    // Akses dashboard tapi status pending/rejected
+    if (pathname.startsWith("/dashboard")) {
+      if (status === "pending") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/pending";
+        return NextResponse.redirect(url);
+      }
+      if (status === "rejected") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/rejected";
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // Akses /pending atau /rejected padahal sudah active
+    if (pathname === "/pending" || pathname === "/rejected") {
+      if (status === "active") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard/tamu-undangan";
+        return NextResponse.redirect(url);
+      }
     }
   }
 
