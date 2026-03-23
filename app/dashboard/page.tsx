@@ -282,9 +282,7 @@ export default function DashboardHomePage() {
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Keseluruhan
-              </span>
+              <span className="text-sm text-muted-foreground">Keseluruhan</span>
               <span className="text-sm font-bold text-primary">
                 {checklistProgress}%
               </span>
@@ -506,9 +504,7 @@ export default function DashboardHomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-blue-500/10 rounded-lg">
               <p className="text-2xl font-bold text-blue-500">{totalGuests}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Total Tamu
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Total Tamu</p>
             </div>
             <div className="text-center p-3 bg-primary/10 rounded-lg">
               <p className="text-2xl font-bold text-primary">{totalQty}</p>

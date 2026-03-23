@@ -16,6 +16,7 @@ import {
   Mail,
   ShieldCheck,
   LayoutDashboard,
+  Store,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -47,6 +48,11 @@ const menuItems = [
     title: "Kalender",
     href: "/dashboard/kalender",
     icon: Calendar,
+  },
+  {
+    title: "Vendor",
+    href: "/dashboard/vendor",
+    icon: Store,
   },
   {
     title: "Seserahan",
