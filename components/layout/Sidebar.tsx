@@ -15,6 +15,7 @@ import {
   GiftIcon,
   Mail,
   ShieldCheck,
+  LayoutDashboard,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,6 +38,11 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 const menuItems = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
   {
     title: "Kalender",
     href: "/dashboard/kalender",
