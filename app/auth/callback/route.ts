@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       }
 
       // Status active atau profile belum ada → ke dashboard
-      return NextResponse.redirect(`${origin}/dashboard/tamu-undangan`);
+      return NextResponse.redirect(`${origin}/dashboard`);
     }
   }
 

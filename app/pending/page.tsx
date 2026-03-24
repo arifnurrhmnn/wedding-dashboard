@@ -37,7 +37,7 @@ export default function PendingPage() {
 
       if (profile.status === "active") {
         toast.success("Akun kamu sudah disetujui! Mengarahkan ke dashboard...");
-        router.push("/dashboard/tamu-undangan");
+        router.push("/dashboard");
       } else if (profile.status === "rejected") {
         toast.error("Akun kamu ditolak oleh admin.");
         router.push("/rejected");

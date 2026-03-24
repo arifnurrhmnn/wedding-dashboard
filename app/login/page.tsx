@@ -23,7 +23,7 @@ export default function LoginPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.push("/dashboard/tamu-undangan");
+        router.push("/dashboard");
       }
     };
     checkSession();
@@ -72,7 +72,7 @@ export default function LoginPage() {
       }
 
       toast.success("Login berhasil!");
-      router.push("/dashboard/tamu-undangan");
+      router.push("/dashboard");
       router.refresh();
     } catch {
       toast.error("Terjadi kesalahan. Coba lagi.");
