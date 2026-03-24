@@ -112,7 +112,7 @@ export default function UsersPage() {
         .single();
 
       if (profile?.role !== "admin") {
-        router.push("/dashboard/tamu-undangan");
+        router.push("/dashboard");
         return;
       }
 

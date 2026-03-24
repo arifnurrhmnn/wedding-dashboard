@@ -14,7 +14,7 @@ export default function Home() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.replace("/dashboard/tamu-undangan");
+        router.replace("/dashboard");
       } else {
         router.replace("/login");
       }

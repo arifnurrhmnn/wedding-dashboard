@@ -28,7 +28,7 @@ export default function DaftarPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.push("/dashboard/tamu-undangan");
+        router.push("/dashboard");
       }
     };
     checkSession();
