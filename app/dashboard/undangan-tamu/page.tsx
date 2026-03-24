@@ -108,7 +108,7 @@ export default function UndanganTamuPage() {
   useEffect(() => {
     dispatch(fetchGuests());
     fetchTemplate();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   const fetchTemplate = useCallback(async () => {
@@ -162,9 +162,18 @@ export default function UndanganTamuPage() {
 
   const resetPage = () => setCurrentPage(1);
 
-  const handleSearch = (v: string) => { setSearch(v); resetPage(); };
-  const handleFilterKategori = (v: string) => { setFilterKategori(v); resetPage(); };
-  const handleFilterUndangan = (v: string) => { setFilterUndangan(v); resetPage(); };
+  const handleSearch = (v: string) => {
+    setSearch(v);
+    resetPage();
+  };
+  const handleFilterKategori = (v: string) => {
+    setFilterKategori(v);
+    resetPage();
+  };
+  const handleFilterUndangan = (v: string) => {
+    setFilterUndangan(v);
+    resetPage();
+  };
 
   // Toggle is_invited langsung dari checkbox
   const handleToggleInvited = async (guest: Guest) => {
@@ -172,8 +181,14 @@ export default function UndanganTamuPage() {
     setUpdatingId(guest.id);
     dispatch(setGuestInvited({ id: guest.id, is_invited: newValue }));
     try {
-      await axiosClient.patch(`/tamu-undangan/${guest.id}`, { is_invited: newValue });
-      toast.success(newValue ? `${guest.nama} sudah diundang ✓` : `${guest.nama} ditandai belum diundang`);
+      await axiosClient.patch(`/tamu-undangan/${guest.id}`, {
+        is_invited: newValue,
+      });
+      toast.success(
+        newValue
+          ? `${guest.nama} sudah diundang ✓`
+          : `${guest.nama} ditandai belum diundang`
+      );
     } catch {
       dispatch(setGuestInvited({ id: guest.id, is_invited: !newValue }));
       toast.error("Gagal memperbarui status undangan");
@@ -198,18 +213,32 @@ export default function UndanganTamuPage() {
   // Filtered list
   const filteredList = useMemo(() => {
     return list.filter((g) => {
-      const matchSearch = search.trim() === "" || g.nama.toLowerCase().includes(search.toLowerCase());
-      const matchKategori = filterKategori === "all" || g.kategori === filterKategori;
-      const matchUndangan = filterUndangan === "all" || (filterUndangan === "sudah" ? !!g.is_invited : !g.is_invited);
+      const matchSearch =
+        search.trim() === "" ||
+        g.nama.toLowerCase().includes(search.toLowerCase());
+      const matchKategori =
+        filterKategori === "all" || g.kategori === filterKategori;
+      const matchUndangan =
+        filterUndangan === "all" ||
+        (filterUndangan === "sudah" ? !!g.is_invited : !g.is_invited);
       return matchSearch && matchKategori && matchUndangan;
     });
   }, [list, search, filterKategori, filterUndangan]);
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
-  const paginatedList = filteredList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginatedList = filteredList.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
-  const totalSudah = useMemo(() => list.filter((g) => !!g.is_invited).length, [list]);
-  const totalBelum = useMemo(() => list.filter((g) => !g.is_invited).length, [list]);
+  const totalSudah = useMemo(
+    () => list.filter((g) => !!g.is_invited).length,
+    [list]
+  );
+  const totalBelum = useMemo(
+    () => list.filter((g) => !g.is_invited).length,
+    [list]
+  );
 
   return (
     <TooltipProvider>
@@ -217,8 +246,12 @@ export default function UndanganTamuPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-border">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Undangan Tamu</h1>
-            <p className="text-muted-foreground">Kelola status pengiriman undangan kepada tamu</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Undangan Tamu
+            </h1>
+            <p className="text-muted-foreground">
+              Kelola status pengiriman undangan kepada tamu
+            </p>
           </div>
           <Button
             variant="outline"
@@ -233,7 +266,10 @@ export default function UndanganTamuPage() {
             )}
             Edit Template WA
             {isCustomTemplate && (
-              <span className="ml-1 w-2 h-2 rounded-full bg-primary inline-block" title="Custom template aktif" />
+              <span
+                className="ml-1 w-2 h-2 rounded-full bg-primary inline-block"
+                title="Custom template aktif"
+              />
             )}
           </Button>
         </div>
@@ -246,7 +282,9 @@ export default function UndanganTamuPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Tamu</p>
-              <p className="text-2xl font-bold text-foreground">{list.length}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {list.length}
+              </p>
             </div>
           </div>
           <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-4 flex-1">
@@ -280,7 +318,10 @@ export default function UndanganTamuPage() {
               className="pl-10 pr-10 h-10 bg-input border-border focus:border-primary focus:ring-primary/20"
             />
             {search && (
-              <button onClick={() => handleSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => handleSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -295,7 +336,9 @@ export default function UndanganTamuPage() {
             <SelectContent>
               <SelectItem value="all">Semua Kategori</SelectItem>
               {KATEGORI_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -328,24 +371,45 @@ export default function UndanganTamuPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-b-2 border-border bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider">Nama</TableHead>
-                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider">Kategori</TableHead>
-                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider text-center">Diundang</TableHead>
-                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider text-center">Copy Pesan</TableHead>
+                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider">
+                      Nama
+                    </TableHead>
+                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider">
+                      Kategori
+                    </TableHead>
+                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider text-center">
+                      Diundang
+                    </TableHead>
+                    <TableHead className="text-foreground/80 font-semibold h-14 text-xs uppercase tracking-wider text-center">
+                      Copy Pesan
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedList.length > 0 ? (
                     paginatedList.map((guest) => (
-                      <TableRow key={guest.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                      <TableRow
+                        key={guest.id}
+                        className="border-b border-border hover:bg-muted/30 transition-colors"
+                      >
                         <TableCell className="py-4 font-medium text-foreground">
                           <div className="flex items-center gap-2">
                             {guest.nama}
-                            {guest.is_invited && <span className="inline-flex items-center gap-1 text-xs text-green-500"><Check className="h-3 w-3" /></span>}
+                            {guest.is_invited && (
+                              <span className="inline-flex items-center gap-1 text-xs text-green-500">
+                                <Check className="h-3 w-3" />
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="py-4">
-                          <Badge className={cn("font-medium border px-3 py-1", KATEGORI_BADGE[guest.kategori] ?? "bg-gray-500/15 text-gray-400 border-gray-500/30")}>
+                          <Badge
+                            className={cn(
+                              "font-medium border px-3 py-1",
+                              KATEGORI_BADGE[guest.kategori] ??
+                                "bg-gray-500/15 text-gray-400 border-gray-500/30"
+                            )}
+                          >
                             {guest.kategori}
                           </Badge>
                         </TableCell>
@@ -357,15 +421,22 @@ export default function UndanganTamuPage() {
                                 disabled={updatingId === guest.id}
                                 className={cn(
                                   "w-6 h-6 rounded-md border-2 flex items-center justify-center mx-auto transition-all duration-150",
-                                  guest.is_invited ? "bg-green-500 border-green-500 text-white" : "border-border bg-background hover:border-primary",
-                                  updatingId === guest.id && "opacity-50 cursor-wait"
+                                  guest.is_invited
+                                    ? "bg-green-500 border-green-500 text-white"
+                                    : "border-border bg-background hover:border-primary",
+                                  updatingId === guest.id &&
+                                    "opacity-50 cursor-wait"
                                 )}
                               >
-                                {guest.is_invited && <Check className="h-3.5 w-3.5" />}
+                                {guest.is_invited && (
+                                  <Check className="h-3.5 w-3.5" />
+                                )}
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {guest.is_invited ? "Klik untuk tandai belum diundang" : "Klik untuk tandai sudah diundang"}
+                              {guest.is_invited
+                                ? "Klik untuk tandai belum diundang"
+                                : "Klik untuk tandai sudah diundang"}
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
@@ -378,14 +449,22 @@ export default function UndanganTamuPage() {
                                 onClick={() => handleCopy(guest)}
                                 className={cn(
                                   "h-8 w-8 mx-auto transition-all",
-                                  copiedId === guest.id ? "text-green-500 hover:text-green-500 hover:bg-green-500/10" : "hover:bg-primary/10 hover:text-primary"
+                                  copiedId === guest.id
+                                    ? "text-green-500 hover:text-green-500 hover:bg-green-500/10"
+                                    : "hover:bg-primary/10 hover:text-primary"
                                 )}
                               >
-                                {copiedId === guest.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                {copiedId === guest.id ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {copiedId === guest.id ? "Tersalin!" : "Copy pesan undangan WA"}
+                              {copiedId === guest.id
+                                ? "Tersalin!"
+                                : "Copy pesan undangan WA"}
                             </TooltipContent>
                           </Tooltip>
                         </TableCell>
@@ -396,7 +475,9 @@ export default function UndanganTamuPage() {
                       <TableCell colSpan={4} className="h-40 text-center">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <Mail className="h-10 w-10 opacity-30" />
-                          <p className="text-base font-medium">Tidak ada data ditemukan.</p>
+                          <p className="text-base font-medium">
+                            Tidak ada data ditemukan.
+                          </p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -411,15 +492,28 @@ export default function UndanganTamuPage() {
         {filteredList.length > PAGE_SIZE && (
           <div className="flex items-center justify-between px-2">
             <p className="text-sm text-muted-foreground">
-              Halaman {currentPage} dari {totalPages} &nbsp;·&nbsp; {filteredList.length} tamu
+              Halaman {currentPage} dari {totalPages} &nbsp;·&nbsp;{" "}
+              {filteredList.length} tamu
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
-                className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
+              >
                 Previous
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-                className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
+              >
                 Next
               </Button>
             </div>
@@ -430,9 +524,16 @@ export default function UndanganTamuPage() {
         <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
           <DialogContent className="max-w-[90vw]! w-[900px] border-border shadow-2xl bg-card">
             <DialogHeader className="space-y-2 pb-2">
-              <DialogTitle className="text-2xl font-bold text-foreground">Edit Template Pesan WA</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-foreground">
+                Edit Template Pesan WA
+              </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                Gunakan <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono">{"{nama}"}</code> sebagai placeholder — akan diganti otomatis dengan nama tamu saat menyalin pesan.
+                Gunakan{" "}
+                <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono">
+                  {"{nama}"}
+                </code>{" "}
+                sebagai placeholder — akan diganti otomatis dengan nama tamu
+                saat menyalin pesan.
               </DialogDescription>
             </DialogHeader>
 
@@ -446,29 +547,43 @@ export default function UndanganTamuPage() {
                   </Label>
                   <Textarea
                     value={editTemplate}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditTemplate(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      setEditTemplate(e.target.value)
+                    }
                     rows={18}
                     className="w-full bg-input border-border focus:border-primary focus:ring-primary/20 font-mono text-sm resize-none"
                     placeholder="Tulis template pesan WA..."
                   />
-                  {!editTemplate.includes("{nama}") && editTemplate.length > 0 && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      ⚠ Template harus mengandung <code className="font-mono">{"{nama}"}</code>
-                    </p>
-                  )}
+                  {!editTemplate.includes("{nama}") &&
+                    editTemplate.length > 0 && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        ⚠ Template harus mengandung{" "}
+                        <code className="font-mono">{"{nama}"}</code>
+                      </p>
+                    )}
                 </div>
 
                 {/* Kanan: Preview */}
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Preview — <span className="text-primary normal-case font-normal">contoh: Budi Santoso</span>
+                    Preview —{" "}
+                    <span className="text-primary normal-case font-normal">
+                      contoh: Budi Santoso
+                    </span>
                   </Label>
-                  <div className="h-full min-h-[300px] bg-[#e5ddd5] rounded-lg p-3 overflow-y-auto"
-                    style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }}>
+                  <div
+                    className="h-full min-h-[300px] bg-[#e5ddd5] rounded-lg p-3 overflow-y-auto"
+                    style={{
+                      backgroundImage:
+                        "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+                    }}
+                  >
                     {editTemplate ? (
                       <div className="inline-block max-w-[85%] bg-white rounded-lg rounded-tl-none px-3 py-2 shadow-sm text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                         {buildWaMessage(editTemplate, "Budi Santoso")}
-                        <div className="text-[10px] text-gray-400 text-right mt-1">12:00 ✓✓</div>
+                        <div className="text-[10px] text-gray-400 text-right mt-1">
+                          12:00 ✓✓
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center h-full text-gray-500 text-sm italic">
@@ -481,18 +596,37 @@ export default function UndanganTamuPage() {
             </div>
 
             <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="ghost" onClick={handleResetTemplate}
-                className="gap-2 text-muted-foreground hover:text-foreground" disabled={templateSaving}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleResetTemplate}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+                disabled={templateSaving}
+              >
                 <RotateCcw className="h-4 w-4" />
                 Reset Default
               </Button>
               <div className="flex-1" />
-              <Button type="button" variant="outline" onClick={() => setTemplateDialogOpen(false)} disabled={templateSaving}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setTemplateDialogOpen(false)}
+                disabled={templateSaving}
+              >
                 Batal
               </Button>
-              <Button onClick={handleSaveTemplate} disabled={templateSaving || !editTemplate.includes("{nama}")}
-                className="bg-primary hover:bg-primary/90 text-white font-medium shadow-md gap-2">
-                {templateSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Menyimpan...</> : "Simpan Template"}
+              <Button
+                onClick={handleSaveTemplate}
+                disabled={templateSaving || !editTemplate.includes("{nama}")}
+                className="bg-primary hover:bg-primary/90 text-white font-medium shadow-md gap-2"
+              >
+                {templateSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan...
+                  </>
+                ) : (
+                  "Simpan Template"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

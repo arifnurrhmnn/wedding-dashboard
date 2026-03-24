@@ -66,17 +66,16 @@ export async function PATCH(request: Request) {
 
     if (!template_pesan.includes("{nama}")) {
       return NextResponse.json(
-        { error: "Template harus mengandung placeholder {nama} untuk nama tamu" },
+        {
+          error: "Template harus mengandung placeholder {nama} untuk nama tamu",
+        },
         { status: 400 }
       );
     }
 
     const { data, error } = await supabase
       .from("wa_settings")
-      .upsert(
-        { user_id: user.id, template_pesan },
-        { onConflict: "user_id" }
-      )
+      .upsert({ user_id: user.id, template_pesan }, { onConflict: "user_id" })
       .select()
       .single();
 

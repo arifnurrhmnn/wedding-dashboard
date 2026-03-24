@@ -4,6 +4,8 @@ import seserahanReducer from "./slices/seserahanSlice";
 import souvenirReducer from "./slices/souvenirSlice";
 import checklistReducer from "./slices/checklistSlice";
 import scheduleReducer from "./slices/scheduleSlice";
+import vendorReducer from "./slices/vendorSlice";
+import budgetReducer from "./slices/budgetSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +14,8 @@ export const store = configureStore({
     souvenir: souvenirReducer,
     checklist: checklistReducer,
     schedules: scheduleReducer,
+    vendor: vendorReducer,
+    budget: budgetReducer,
   },
 });
 
