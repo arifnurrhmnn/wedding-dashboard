@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   LayoutDashboard,
   Store,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -53,6 +54,11 @@ const menuItems = [
     title: "Vendor",
     href: "/dashboard/vendor",
     icon: Store,
+  },
+  {
+    title: "Budget & Keuangan",
+    href: "/dashboard/budget",
+    icon: Wallet,
   },
   {
     title: "Seserahan",
