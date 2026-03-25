@@ -34,10 +34,18 @@ interface BudgetHeroProps {
   settings: BudgetSettings | null;
   categories: BudgetCategory[];
   items: BudgetItem[];
+  autoLinkedEstimasi?: number;
+  autoLinkedRealisasi?: number;
   onSetBudget: () => void;
 }
 
-export function BudgetHero({ settings, items, onSetBudget }: BudgetHeroProps) {
+export function BudgetHero({
+  settings,
+  items,
+  autoLinkedEstimasi = 0,
+  autoLinkedRealisasi = 0,
+  onSetBudget,
+}: BudgetHeroProps) {
   const totalBudget = settings?.total_budget ?? 0;
 
   const {
@@ -48,8 +56,10 @@ export function BudgetHero({ settings, items, onSetBudget }: BudgetHeroProps) {
     isOverEstimasi,
     isOverRealisasi,
   } = useMemo(() => {
-    const est = items.reduce((s, i) => s + (i.estimasi || 0), 0);
-    const real = items.reduce((s, i) => s + (i.realisasi || 0), 0);
+    const est =
+      items.reduce((s, i) => s + (i.estimasi || 0), 0) + autoLinkedEstimasi;
+    const real =
+      items.reduce((s, i) => s + (i.realisasi || 0), 0) + autoLinkedRealisasi;
     const sisa = totalBudget - real;
     const pct =
       totalBudget > 0
@@ -63,7 +73,7 @@ export function BudgetHero({ settings, items, onSetBudget }: BudgetHeroProps) {
       isOverEstimasi: totalBudget > 0 && est > totalBudget,
       isOverRealisasi: totalBudget > 0 && real > totalBudget,
     };
-  }, [items, totalBudget]);
+  }, [items, totalBudget, autoLinkedEstimasi, autoLinkedRealisasi]);
 
   const isLowBudget =
     totalBudget > 0 && sisaBudget < totalBudget * 0.1 && !isOverRealisasi;
@@ -168,6 +178,13 @@ export function BudgetHero({ settings, items, onSetBudget }: BudgetHeroProps) {
             bg="bg-blue-500/10"
             label="Total Estimasi"
             value={fmt(totalEstimasi)}
+            sub={
+              autoLinkedEstimasi > 0
+                ? `Incl. ${fmt(
+                    autoLinkedEstimasi
+                  )} auto dari seserahan/souvenir`
+                : undefined
+            }
             warn={isOverEstimasi}
           />
           <StatCard
@@ -175,6 +192,13 @@ export function BudgetHero({ settings, items, onSetBudget }: BudgetHeroProps) {
             bg="bg-green-500/10"
             label="Sudah Dibayar"
             value={fmt(totalRealisasi)}
+            sub={
+              autoLinkedRealisasi > 0
+                ? `Incl. ${fmt(
+                    autoLinkedRealisasi
+                  )} sudah dibeli dari seserahan/souvenir`
+                : undefined
+            }
           />
           <StatCard
             icon={<TrendingDown className="h-5 w-5 text-orange-400" />}

@@ -16,7 +16,9 @@ import {
   Package,
   DollarSign,
   ShoppingCart,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import { SeserahanTable } from "./components/SeserahanTable";
 import { SeserahanFormModal } from "./components/SeserahanFormModal";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
@@ -194,6 +196,27 @@ export default function SeserahanPage() {
               <DollarSign className="h-6 w-6 text-primary" />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Info Banner — Budget & Keuangan */}
+      <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <Wallet className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground">
+            Catat pembayaran seserahan di{" "}
+            <Link
+              href="/dashboard/budget"
+              className="text-primary hover:underline font-semibold"
+            >
+              Budget & Keuangan
+            </Link>
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Halaman ini untuk mencatat daftar &amp; status pembelian item
+            seserahan. Untuk tracking DP, pelunasan, dan pengeluaran, gunakan
+            menu Budget &amp; Keuangan → kategori Seserahan.
+          </p>
         </div>
       </div>
 

@@ -8,12 +8,11 @@ const DEFAULT_CATEGORIES = [
   { nama: "Dekorasi & Florist", icon: "💐", urutan: 3 },
   { nama: "Busana & Makeup", icon: "👗", urutan: 4 },
   { nama: "Entertainment & Musik", icon: "🎵", urutan: 5 },
-  { nama: "Undangan & Souvenir", icon: "💌", urutan: 6 },
-  { nama: "Seserahan", icon: "🎁", urutan: 7 },
-  { nama: "Administrasi & Dokumen", icon: "📄", urutan: 8 },
-  { nama: "Transportasi", icon: "🚗", urutan: 9 },
-  { nama: "Pakaian Keluarga Inti", icon: "👔", urutan: 10 },
-  { nama: "Lain-lain", icon: "🔆", urutan: 11 },
+  { nama: "Undangan", icon: "💌", urutan: 6 },
+  { nama: "Administrasi & Dokumen", icon: "📄", urutan: 7 },
+  { nama: "Transportasi", icon: "🚗", urutan: 8 },
+  { nama: "Pakaian Keluarga Inti", icon: "👔", urutan: 9 },
+  { nama: "Lain-lain", icon: "🔆", urutan: 10 },
 ];
 
 export async function POST() {

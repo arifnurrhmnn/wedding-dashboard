@@ -18,6 +18,8 @@ import {
   BudgetItem,
 } from "@/redux/slices/budgetSlice";
 import { fetchVendors } from "@/redux/slices/vendorSlice";
+import { fetchSeserahan } from "@/redux/slices/seserahanSlice";
+import { fetchSouvenir } from "@/redux/slices/souvenirSlice";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +56,8 @@ export default function BudgetPage() {
     (s) => s.budget
   );
   const { list: vendors } = useAppSelector((s) => s.vendor);
+  const { list: seserahanList } = useAppSelector((s) => s.seserahan);
+  const { list: souvenirList } = useAppSelector((s) => s.souvenir);
 
   // modals
   const [setBudgetOpen, setSetBudgetOpen] = useState(false);
@@ -82,10 +86,30 @@ export default function BudgetPage() {
   const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false);
 
   useEffect(() => {
+    const initCategories = async () => {
+      const result = await dispatch(fetchBudgetCategories());
+      if (fetchBudgetCategories.fulfilled.match(result)) {
+        const cats =
+          result.payload as import("@/redux/slices/budgetSlice").BudgetCategory[];
+        const hasSeserahan = cats.some((c) =>
+          c.nama.toLowerCase().includes("seserahan")
+        );
+        const hasSouvenir = cats.some((c) =>
+          c.nama.toLowerCase().includes("souvenir")
+        );
+        if (!hasSeserahan)
+          dispatch(addBudgetCategory({ nama: "Seserahan", icon: "🎁" }));
+        if (!hasSouvenir)
+          dispatch(addBudgetCategory({ nama: "Souvenir", icon: "🎀" }));
+      }
+    };
+
     dispatch(fetchBudgetSettings());
-    dispatch(fetchBudgetCategories());
+    initCategories();
     dispatch(fetchBudgetItems());
     dispatch(fetchVendors());
+    dispatch(fetchSeserahan());
+    dispatch(fetchSouvenir());
   }, [dispatch]);
 
   // ── Handlers: Settings ──────────────────────────────────────────
@@ -235,6 +259,78 @@ export default function BudgetPage() {
   const countByStatus = (s: string) =>
     items.filter((i) => i.status === s).length;
 
+  // ── Linked summary dari Seserahan & Souvenir ────────────────────
+  const seserahanSummary = {
+    label: "Seserahan",
+    href: "/dashboard/seserahan",
+    totalEstimasi: seserahanList.reduce((s, i) => s + (i.harga || 0), 0),
+    totalRealisasi: seserahanList
+      .filter((i) => i.status_pembelian === "Sudah Dibeli")
+      .reduce((s, i) => s + (i.harga || 0), 0),
+    count: seserahanList.length,
+    countLabel: "item",
+    items: seserahanList.map((i) => ({
+      id: i.id,
+      nama: i.nama_item,
+      harga: i.harga || 0,
+      sudahDibeli: i.status_pembelian === "Sudah Dibeli",
+    })),
+  };
+
+  const souvenirSummary = {
+    label: "Souvenir",
+    href: "/dashboard/souvenir",
+    totalEstimasi: souvenirList.reduce(
+      (s, i) => s + (i.total_harga ?? i.harga_per_item * i.jumlah ?? 0),
+      0
+    ),
+    totalRealisasi: souvenirList
+      .filter((i) => i.status_pengadaan === "Sudah Dibeli")
+      .reduce(
+        (s, i) => s + (i.total_harga ?? i.harga_per_item * i.jumlah ?? 0),
+        0
+      ),
+    count: souvenirList.length,
+    countLabel: "jenis",
+    items: souvenirList.map((i) => ({
+      id: i.id,
+      nama: i.nama_souvenir,
+      harga: i.total_harga ?? i.harga_per_item * i.jumlah ?? 0,
+      sudahDibeli: i.status_pengadaan === "Sudah Dibeli",
+    })),
+  };
+
+  const getLinkedSummary = (catNama: string) => {
+    const lower = catNama.toLowerCase();
+    if (lower.includes("seserahan")) return seserahanSummary;
+    if (lower.includes("souvenir")) return souvenirSummary;
+    return undefined;
+  };
+
+  // Kategori yang bukan linked (bukan Seserahan/Souvenir)
+  const nonLinkedCategories = categories.filter(
+    (cat) => !getLinkedSummary(cat.nama)
+  );
+
+  // Auto-estimasi: untuk kategori yg punya linked module tapi belum ada budget items,
+  // total dari seserahan/souvenir otomatis dihitung sebagai estimasi.
+  const autoLinkedEstimasi = categories.reduce((sum, cat) => {
+    const linked = getLinkedSummary(cat.nama);
+    if (!linked || linked.totalEstimasi === 0) return sum;
+    const hasItems = items.some((i) => i.category_id === cat.id);
+    if (!hasItems) return sum + linked.totalEstimasi;
+    return sum;
+  }, 0);
+
+  // Auto-realisasi: total "sudah dibeli" dari seserahan/souvenir juga masuk ke "Sudah Dibayar"
+  const autoLinkedRealisasi = categories.reduce((sum, cat) => {
+    const linked = getLinkedSummary(cat.nama);
+    if (!linked || linked.totalRealisasi === 0) return sum;
+    const hasItems = items.some((i) => i.category_id === cat.id);
+    if (!hasItems) return sum + linked.totalRealisasi;
+    return sum;
+  }, 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -248,11 +344,11 @@ export default function BudgetPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {categories.length === 0 && (
+          {nonLinkedCategories.length === 0 && (
             <Button
               variant="outline"
               onClick={() => setGenerateConfirmOpen(true)}
-              className="h-10 gap-2 border-primary/30 text-primary hover:bg-primary/10"
+              className="btn-shimmer h-10 gap-2 border-primary/30 text-primary hover:bg-primary/10"
             >
               <Sparkles className="h-4 w-4" />
               Generate Kategori Default
@@ -295,6 +391,8 @@ export default function BudgetPage() {
             settings={settings}
             categories={categories}
             items={items}
+            autoLinkedEstimasi={autoLinkedEstimasi}
+            autoLinkedRealisasi={autoLinkedRealisasi}
             onSetBudget={() => setSetBudgetOpen(true)}
           />
 
@@ -348,7 +446,7 @@ export default function BudgetPage() {
             </div>
           )}
 
-          {/* Empty state: no categories */}
+          {/* Empty state: truly no categories */}
           {categories.length === 0 && (
             <div className="text-center py-16 border border-dashed border-border rounded-xl">
               <p className="text-4xl mb-4">💰</p>
@@ -363,7 +461,7 @@ export default function BudgetPage() {
                 <Button
                   onClick={handleGenerateDefault}
                   disabled={generatingDefault}
-                  className="bg-primary hover:bg-primary/90 text-white gap-2"
+                  className="btn-shimmer bg-primary hover:bg-primary/90 text-white gap-2"
                 >
                   <Sparkles className="h-4 w-4" />
                   Generate Kategori Default
@@ -373,6 +471,31 @@ export default function BudgetPage() {
                   Buat Kategori Manual
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Hint state: hanya ada Seserahan/Souvenir, belum ada kategori lain */}
+          {categories.length > 0 && nonLinkedCategories.length === 0 && (
+            <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl border border-primary/20 bg-primary/5 text-sm">
+              <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground">
+                  Belum ada kategori budget lainnya
+                </p>
+                <p className="text-muted-foreground mt-0.5">
+                  Seserahan dan Souvenir sudah tersinkron otomatis. Tambah
+                  kategori lain seperti Venue, Katering, dan Foto untuk
+                  melengkapi budget pernikahan Anda.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setGenerateConfirmOpen(true)}
+                className="btn-shimmer shrink-0 h-8 bg-primary hover:bg-primary/90 text-white gap-1.5 text-xs"
+              >
+                <Sparkles className="h-3 w-3" />
+                Generate Default
+              </Button>
             </div>
           )}
 
@@ -390,6 +513,7 @@ export default function BudgetPage() {
                   onEditCategory={handleOpenEditCategory}
                   onDeleteCategory={handleDeleteCategoryConfirm}
                   deletingItemId={deletingItemId}
+                  linkedSummary={getLinkedSummary(cat.nama)}
                 />
               ))}
             </div>
@@ -489,7 +613,7 @@ export default function BudgetPage() {
             <DialogDescription className="text-muted-foreground">
               Sistem akan otomatis membuat{" "}
               <span className="font-semibold text-foreground">
-                12 kategori budget
+                11 kategori budget
               </span>{" "}
               yang umum digunakan untuk pernikahan. Anda tetap bisa menambah,
               mengedit, atau menghapus kategori setelahnya.
@@ -509,8 +633,7 @@ export default function BudgetPage() {
                 { icon: "💐", nama: "Dekorasi & Florist" },
                 { icon: "👗", nama: "Busana & Makeup" },
                 { icon: "🎵", nama: "Entertainment & Musik" },
-                { icon: "💌", nama: "Undangan & Souvenir" },
-                { icon: "🎁", nama: "Seserahan" },
+                { icon: "💌", nama: "Undangan" },
                 { icon: "📄", nama: "Administrasi & Dokumen" },
                 { icon: "🚗", nama: "Transportasi" },
                 { icon: "👔", nama: "Pakaian Keluarga Inti" },
@@ -525,6 +648,12 @@ export default function BudgetPage() {
                 </div>
               ))}
             </div>
+            <p className="text-xs text-primary/80 mt-3 pt-3 border-t border-border">
+              🎀 <span className="font-semibold">Souvenir</span> dan 🎁{" "}
+              <span className="font-semibold">Seserahan</span> tidak termasuk di
+              sini — keduanya sudah otomatis dibuat dan tersinkron dengan modul
+              masing-masing.
+            </p>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-2 pt-2">

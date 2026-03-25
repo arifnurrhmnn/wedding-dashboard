@@ -10,7 +10,10 @@ import {
   Pencil,
   Trash2,
   AlertTriangle,
+  ExternalLink,
+  Lock,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -45,6 +48,15 @@ const STATUS_CONFIG = {
   lunas: { label: "✅ Lunas", className: "bg-green-500/20 text-green-400" },
 };
 
+interface LinkedSummary {
+  label: string;
+  href: string;
+  totalEstimasi: number;
+  totalRealisasi: number;
+  count: number;
+  countLabel: string;
+}
+
 interface BudgetCategoryCardProps {
   category: BudgetCategory;
   items: BudgetItem[];
@@ -54,6 +66,7 @@ interface BudgetCategoryCardProps {
   onEditCategory: (category: BudgetCategory) => void;
   onDeleteCategory: (category: BudgetCategory) => void;
   deletingItemId: string | null;
+  linkedSummary?: LinkedSummary;
 }
 
 export function BudgetCategoryCard({
@@ -65,33 +78,51 @@ export function BudgetCategoryCard({
   onEditCategory,
   onDeleteCategory,
   deletingItemId,
+  linkedSummary,
 }: BudgetCategoryCardProps) {
   const [expanded, setExpanded] = useState(true);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<BudgetItem | null>(null);
 
-  const { totalEstimasi, totalRealisasi, persen, lunas, dp, belum } =
-    useMemo(() => {
-      const est = items.reduce((s, i) => s + (i.estimasi || 0), 0);
-      const real = items.reduce((s, i) => s + (i.realisasi || 0), 0);
-      const pct = est > 0 ? Math.min(Math.round((real / est) * 100), 100) : 0;
-      return {
-        totalEstimasi: est,
-        totalRealisasi: real,
-        persen: pct,
-        lunas: items.filter((i) => i.status === "lunas").length,
-        dp: items.filter((i) => i.status === "dp").length,
-        belum: items.filter((i) => i.status === "belum_bayar").length,
-      };
-    }, [items]);
+  // Apakah ini kategori yang di-lock (linked ke modul lain)
+  const isLinkedCategory = !!linkedSummary;
+
+  const { totalEstimasi, totalRealisasi, lunas, dp, belum } = useMemo(() => {
+    const est = items.reduce((s, i) => s + (i.estimasi || 0), 0);
+    const real = items.reduce((s, i) => s + (i.realisasi || 0), 0);
+    const pct = est > 0 ? Math.min(Math.round((real / est) * 100), 100) : 0;
+    void pct; // used via displayPersen
+    return {
+      totalEstimasi: est,
+      totalRealisasi: real,
+      lunas: items.filter((i) => i.status === "lunas").length,
+      dp: items.filter((i) => i.status === "dp").length,
+      belum: items.filter((i) => i.status === "belum_bayar").length,
+    };
+  }, [items]);
 
   const confirmDeleteItem = (item: BudgetItem) => {
     setItemToDelete(item);
     setDeleteConfirmOpen(true);
   };
 
+  // Progress bar values: pakai budget items jika ada, fallback ke linked summary
+  const displayEstimasi =
+    totalEstimasi > 0 ? totalEstimasi : linkedSummary?.totalEstimasi ?? 0;
+  const displayRealisasi =
+    totalRealisasi > 0 ? totalRealisasi : linkedSummary?.totalRealisasi ?? 0;
+  const displayPersen =
+    displayEstimasi > 0
+      ? Math.min(Math.round((displayRealisasi / displayEstimasi) * 100), 100)
+      : 0;
+
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div
+      className={cn(
+        "bg-card border rounded-xl overflow-hidden",
+        isLinkedCategory ? "border-primary/20" : "border-border"
+      )}
+    >
       {/* Category Header */}
       <div
         className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors select-none"
@@ -103,8 +134,14 @@ export function BudgetCategoryCard({
             <p className="font-semibold text-foreground text-sm">
               {category.nama}
             </p>
+            {isLinkedCategory && (
+              <span className="flex items-center gap-1 text-xs text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
+                <Lock className="h-2.5 w-2.5" />
+                Auto-sync
+              </span>
+            )}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {items.length > 0 && (
+              {!isLinkedCategory && items.length > 0 && (
                 <>
                   <span>{items.length} item</span>
                   {lunas > 0 && (
@@ -114,58 +151,83 @@ export function BudgetCategoryCard({
                   {belum > 0 && <span>· {belum} belum</span>}
                 </>
               )}
+              {isLinkedCategory && linkedSummary && linkedSummary.count > 0 && (
+                <span>
+                  {linkedSummary.count} {linkedSummary.countLabel}
+                </span>
+              )}
             </div>
           </div>
-          {items.length > 0 && (
+
+          {/* Progress bar */}
+          {displayEstimasi > 0 && (
             <div className="flex items-center gap-2 mt-1.5">
               <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
                 <div
                   className={cn(
                     "h-1.5 rounded-full transition-all",
-                    persen >= 100
+                    displayPersen >= 100
                       ? "bg-green-500"
-                      : persen >= 50
+                      : displayPersen >= 50
                       ? "bg-primary"
                       : "bg-muted-foreground/40"
                   )}
-                  style={{ width: `${persen}%` }}
+                  style={{ width: `${displayPersen}%` }}
                 />
               </div>
               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {fmtCompact(totalRealisasi)} / {fmtCompact(totalEstimasi)}
+                {fmtCompact(displayRealisasi)} / {fmtCompact(displayEstimasi)}
               </span>
             </div>
           )}
         </div>
+
         <div
           className="flex items-center gap-1 shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => onEditCategory(category)}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-            onClick={() => onDeleteCategory(category)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            size="sm"
-            className="h-7 px-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0 shadow-none gap-1"
-            variant="outline"
-            onClick={() => onAddItem(category.id)}
-          >
-            <Plus className="h-3 w-3" />
-            Tambah
-          </Button>
+          {isLinkedCategory ? (
+            /* Linked category: hanya tombol "Kelola" yang redirect ke menu modul */
+            <Link href={linkedSummary!.href}>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0 shadow-none gap-1"
+                variant="outline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Kelola
+              </Button>
+            </Link>
+          ) : (
+            /* Normal category: edit, delete, tambah */
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => onEditCategory(category)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                onClick={() => onDeleteCategory(category)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0 shadow-none gap-1"
+                variant="outline"
+                onClick={() => onAddItem(category.id)}
+              >
+                <Plus className="h-3 w-3" />
+                Tambah
+              </Button>
+            </>
+          )}
           <div className="ml-1">
             {expanded ? (
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -176,8 +238,69 @@ export function BudgetCategoryCard({
         </div>
       </div>
 
-      {/* Items */}
-      {expanded && (
+      {/* Linked Category: laporan read-only dari modul */}
+      {isLinkedCategory && expanded && linkedSummary && (
+        <div className="border-t border-border">
+          {/* Summary stats */}
+          <div className="grid grid-cols-3 divide-x divide-border bg-muted/20">
+            <div className="px-4 py-3 text-center">
+              <p className="text-xs text-muted-foreground">Total Item</p>
+              <p className="text-base font-bold text-foreground">
+                {linkedSummary.count}
+                <span className="text-xs font-normal text-muted-foreground ml-1">
+                  {linkedSummary.countLabel}
+                </span>
+              </p>
+            </div>
+            <div className="px-4 py-3 text-center">
+              <p className="text-xs text-muted-foreground">Total Estimasi</p>
+              <p className="text-base font-bold text-foreground">
+                {fmtCompact(linkedSummary.totalEstimasi)}
+              </p>
+            </div>
+            <div className="px-4 py-3 text-center">
+              <p className="text-xs text-muted-foreground">Sudah Dibeli</p>
+              <p className="text-base font-bold text-green-400">
+                {fmtCompact(linkedSummary.totalRealisasi)}
+              </p>
+            </div>
+          </div>
+
+          {/* Empty state */}
+          {linkedSummary.count === 0 && (
+            <div className="px-4 py-5 text-center">
+              <p className="text-sm text-muted-foreground italic">
+                Belum ada data di menu {linkedSummary.label}
+              </p>
+              <Link
+                href={linkedSummary.href}
+                className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+              >
+                <Plus className="h-3 w-3" />
+                Tambah di menu {linkedSummary.label}
+              </Link>
+            </div>
+          )}
+
+          {/* Footer CTA */}
+          <div className="px-4 py-2.5 bg-muted/10 border-t border-border flex items-center justify-between">
+            <p className="text-xs text-muted-foreground italic">
+              Data diambil otomatis dari menu {linkedSummary.label}
+            </p>
+            <Link
+              href={linkedSummary.href}
+              className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+            >
+              <Plus className="h-3 w-3" />
+              Tambah {linkedSummary.label}
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Normal category: budget items */}
+      {!isLinkedCategory && expanded && (
         <div className="border-t border-border">
           {items.length === 0 ? (
             <div className="px-4 py-6 text-center">
