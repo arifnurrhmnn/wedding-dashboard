@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { getBudgetPaid } from "@/lib/budget";
 import {
   BudgetSettings,
   BudgetCategory,
@@ -59,7 +60,7 @@ export function BudgetHero({
     const est =
       items.reduce((s, i) => s + (i.estimasi || 0), 0) + autoLinkedEstimasi;
     const real =
-      items.reduce((s, i) => s + (i.realisasi || 0), 0) + autoLinkedRealisasi;
+      items.reduce((s, i) => s + getBudgetPaid(i), 0) + autoLinkedRealisasi;
     const sisa = totalBudget - real;
     const pct =
       totalBudget > 0

@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -6,12 +6,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
     const { status } = await request.json();
@@ -27,10 +24,12 @@ export async function PATCH(
       .from("vendors")
       .update({ status })
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: "Vendor tidak ditemukan" }, { status: 404 });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json(

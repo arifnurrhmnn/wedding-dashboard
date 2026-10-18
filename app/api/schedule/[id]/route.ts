@@ -1,35 +1,32 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { parseScheduleInput } from "@/lib/schedule";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
     const body = await request.json();
 
-    // Validate end_datetime >= start_datetime if both are provided
-    if (body.end_datetime && body.start_datetime) {
-      if (new Date(body.end_datetime) < new Date(body.start_datetime)) {
-        return NextResponse.json(
-          { error: "End datetime must be after start datetime" },
-          { status: 400 }
-        );
-      }
-    }
+    const existing = await supabase.from("schedules")
+      .select("title, start_datetime, end_datetime")
+      .eq("id", id).eq("user_id", user.id).maybeSingle();
+    if (existing.error) throw existing.error;
+    if (!existing.data) return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
+    const parsed = parseScheduleInput(body, existing.data);
+    if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
     const { data, error } = await supabase
       .from("schedules")
-      .update(body)
+      .update(parsed.value)
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -50,16 +47,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
 
-    const { error } = await supabase.from("schedules").delete().eq("id", id);
+    const { error } = await supabase.from("schedules").delete().eq("id", id).eq("user_id", user.id);
 
     if (error) throw error;
 

@@ -95,7 +95,7 @@ export default function ChecklistPage() {
         description: data.description,
         category: data.category,
         timeline_phase: data.timeline_phase,
-        due_date: data.due_date || undefined,
+        due_date: data.due_date || null,
         status: data.status,
         priority: data.priority,
       };

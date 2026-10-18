@@ -22,6 +22,7 @@ import {
 import Papa from "papaparse";
 import axiosClient from "@/lib/axiosClient";
 import { toast } from "sonner";
+import { guestExportRow } from "@/lib/guest-import";
 
 interface ImportExportButtonsProps {
   onImportSuccess: () => void;
@@ -34,6 +35,7 @@ interface ImportExportButtonsProps {
     qty: number;
     gift_type?: string | null;
     gift_value?: string | null;
+    is_invited?: boolean | null;
   }>;
 }
 
@@ -71,16 +73,7 @@ export function ImportExportButtons({
     // Reverse the order: newest first (descending)
     const reversedGuests = [...guests].reverse();
 
-    const csvData = reversedGuests.map((guest) => ({
-      unique_id: guest.unique_id || "",
-      nama: guest.nama,
-      kategori: guest.kategori,
-      skala_prioritas: guest.skala_prioritas,
-      tipe_undangan: guest.tipe_undangan,
-      qty: guest.qty,
-      gift_type: guest.gift_type || "",
-      gift_value: guest.gift_value || "",
-    }));
+    const csvData = reversedGuests.map(guestExportRow);
 
     const csv = Papa.unparse(csvData);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -211,6 +204,7 @@ export function ImportExportButtons({
         qty: 1,
         gift_type: "",
         gift_value: "",
+        is_invited: "false",
       },
     ];
 
@@ -422,7 +416,14 @@ export function ImportExportButtons({
                   • <strong>gift_value</strong> (optional) - nominal atau nama
                   kado
                 </li>
+                <li>
+                  • <strong>is_invited</strong> (optional) - true / false
+                </li>
               </ul>
+              <p className="text-xs text-muted-foreground">
+                Saat memperbarui tamu, kolom yang tidak disertakan tetap memakai
+                nilai tersimpan. Nilai gift kosong menghapus data gift.
+              </p>
               <Button
                 variant="link"
                 onClick={downloadTemplate}

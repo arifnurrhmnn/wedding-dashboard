@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getBudgetStatus, getLinkedBudgetCategoryIds, getLinkedBudgetModule } from "@/lib/budget";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
   fetchBudgetSettings,
@@ -92,10 +93,10 @@ export default function BudgetPage() {
         const cats =
           result.payload as import("@/redux/slices/budgetSlice").BudgetCategory[];
         const hasSeserahan = cats.some((c) =>
-          c.nama.toLowerCase().includes("seserahan")
+          getLinkedBudgetModule(c.nama) === "seserahan"
         );
         const hasSouvenir = cats.some((c) =>
-          c.nama.toLowerCase().includes("souvenir")
+          getLinkedBudgetModule(c.nama) === "souvenir"
         );
         if (!hasSeserahan)
           dispatch(addBudgetCategory({ nama: "Seserahan", icon: "🎁" }));
@@ -252,12 +253,12 @@ export default function BudgetPage() {
     items.filter(
       (i) =>
         i.category_id === categoryId &&
-        (filterStatus === "semua" || i.status === filterStatus)
+        (filterStatus === "semua" || getBudgetStatus(i) === filterStatus)
     );
 
   // Summary counts for filter chips
   const countByStatus = (s: string) =>
-    items.filter((i) => i.status === s).length;
+    items.filter((i) => getBudgetStatus(i) === s).length;
 
   // ── Linked summary dari Seserahan & Souvenir ────────────────────
   const seserahanSummary = {
@@ -281,13 +282,13 @@ export default function BudgetPage() {
     label: "Souvenir",
     href: "/dashboard/souvenir",
     totalEstimasi: souvenirList.reduce(
-      (s, i) => s + (i.total_harga ?? i.harga_per_item * i.jumlah ?? 0),
+      (s, i) => s + (i.total_harga ?? (i.harga_per_item ?? 0) * (i.jumlah ?? 0)),
       0
     ),
     totalRealisasi: souvenirList
       .filter((i) => i.status_pengadaan === "Sudah Dibeli")
       .reduce(
-        (s, i) => s + (i.total_harga ?? i.harga_per_item * i.jumlah ?? 0),
+        (s, i) => s + (i.total_harga ?? (i.harga_per_item ?? 0) * (i.jumlah ?? 0)),
         0
       ),
     count: souvenirList.length,
@@ -295,40 +296,32 @@ export default function BudgetPage() {
     items: souvenirList.map((i) => ({
       id: i.id,
       nama: i.nama_souvenir,
-      harga: i.total_harga ?? i.harga_per_item * i.jumlah ?? 0,
+      harga: i.total_harga ?? (i.harga_per_item ?? 0) * (i.jumlah ?? 0),
       sudahDibeli: i.status_pengadaan === "Sudah Dibeli",
     })),
   };
 
-  const getLinkedSummary = (catNama: string) => {
-    const lower = catNama.toLowerCase();
-    if (lower.includes("seserahan")) return seserahanSummary;
-    if (lower.includes("souvenir")) return souvenirSummary;
+  const linkedCategoryIds = getLinkedBudgetCategoryIds(categories);
+  const getLinkedSummary = (category: BudgetCategory) => {
+    if (category.id === linkedCategoryIds.seserahan) return seserahanSummary;
+    if (category.id === linkedCategoryIds.souvenir) return souvenirSummary;
     return undefined;
   };
 
   // Kategori yang bukan linked (bukan Seserahan/Souvenir)
   const nonLinkedCategories = categories.filter(
-    (cat) => !getLinkedSummary(cat.nama)
+    (cat) => !getLinkedSummary(cat)
   );
 
-  // Auto-estimasi: untuk kategori yg punya linked module tapi belum ada budget items,
-  // total dari seserahan/souvenir otomatis dihitung sebagai estimasi.
+  // Each module is counted once. Manual items remain additional costs even
+  // when they share a category with an automatic module summary.
   const autoLinkedEstimasi = categories.reduce((sum, cat) => {
-    const linked = getLinkedSummary(cat.nama);
-    if (!linked || linked.totalEstimasi === 0) return sum;
-    const hasItems = items.some((i) => i.category_id === cat.id);
-    if (!hasItems) return sum + linked.totalEstimasi;
-    return sum;
+    return sum + (getLinkedSummary(cat)?.totalEstimasi ?? 0);
   }, 0);
 
   // Auto-realisasi: total "sudah dibeli" dari seserahan/souvenir juga masuk ke "Sudah Dibayar"
   const autoLinkedRealisasi = categories.reduce((sum, cat) => {
-    const linked = getLinkedSummary(cat.nama);
-    if (!linked || linked.totalRealisasi === 0) return sum;
-    const hasItems = items.some((i) => i.category_id === cat.id);
-    if (!hasItems) return sum + linked.totalRealisasi;
-    return sum;
+    return sum + (getLinkedSummary(cat)?.totalRealisasi ?? 0);
   }, 0);
 
   return (
@@ -513,7 +506,7 @@ export default function BudgetPage() {
                   onEditCategory={handleOpenEditCategory}
                   onDeleteCategory={handleDeleteCategoryConfirm}
                   deletingItemId={deletingItemId}
-                  linkedSummary={getLinkedSummary(cat.nama)}
+                  linkedSummary={getLinkedSummary(cat)}
                 />
               ))}
             </div>

@@ -1,17 +1,15 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { vendorInput } from "../_validation";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
 
@@ -21,9 +19,14 @@ export async function GET(
         `*, vendor_packages(*), vendor_activity_logs(*), vendor_documents(*)`
       )
       .eq("id", id)
-      .single();
+      .eq("user_id", user.id)
+      .eq("vendor_packages.user_id", user.id)
+      .eq("vendor_activity_logs.user_id", user.id)
+      .eq("vendor_documents.user_id", user.id)
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: "Vendor tidak ditemukan" }, { status: 404 });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json(
@@ -38,24 +41,24 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
-    const body = await request.json();
+    const values = vendorInput(await request.json(), true);
+    if (!values) return NextResponse.json({ error: "Data vendor tidak valid" }, { status: 400 });
 
     const { data, error } = await supabase
       .from("vendors")
-      .update(body)
+      .update(values)
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: "Vendor tidak ditemukan" }, { status: 404 });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json(
@@ -70,18 +73,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
 
-    const { error } = await supabase.from("vendors").delete().eq("id", id);
+    const { data, error } = await supabase.from("vendors").delete().eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: "Vendor tidak ditemukan" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json(

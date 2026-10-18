@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ interface CategoryFormModalProps {
   loading: boolean;
 }
 
-export function CategoryFormModal({
+function CategoryFormContent({
   open,
   onOpenChange,
   category,
@@ -56,17 +56,9 @@ export function CategoryFormModal({
   const [nama, setNama] = useState(category?.nama ?? "");
   const [icon, setIcon] = useState(category?.icon ?? "💰");
 
-  useEffect(() => {
-    if (open) {
-      setNama(category?.nama ?? "");
-      setIcon(category?.icon ?? "💰");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit({ nama, icon });
+    await onSubmit({ nama: nama.trim(), icon });
   };
 
   return (
@@ -168,4 +160,8 @@ export function CategoryFormModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+export function CategoryFormModal(props: CategoryFormModalProps) {
+  return props.open ? <CategoryFormContent key={props.category?.id ?? "new"} {...props} /> : null;
 }

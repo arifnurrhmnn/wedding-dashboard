@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,11 +21,11 @@ export default function LoginPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.push("/dashboard");
+        window.location.replace("/dashboard");
       }
     };
     checkSession();
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,28 +50,32 @@ export default function LoginPage() {
       }
 
       // Cek status user setelah login
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("status")
         .eq("id", data.user.id)
         .single();
 
-      if (profile?.status === "pending") {
-        router.push("/pending");
+      if (profileError || !profile || profile.status === "pending") {
+        window.location.replace("/pending");
         return;
       }
 
       if (profile?.status === "rejected") {
-        await supabase.auth.signOut();
         toast.error(
           "Akun kamu telah ditolak. Hubungi admin untuk informasi lebih lanjut."
         );
+        window.location.replace("/rejected");
+        return;
+      }
+
+      if (profile.status !== "active") {
+        window.location.replace("/pending");
         return;
       }
 
       toast.success("Login berhasil!");
-      router.push("/dashboard");
-      router.refresh();
+      window.location.replace("/dashboard");
     } catch {
       toast.error("Terjadi kesalahan. Coba lagi.");
     } finally {

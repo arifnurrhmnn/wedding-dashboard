@@ -1,17 +1,15 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { packageInput } from "../../_validation";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
 
@@ -19,6 +17,7 @@ export async function GET(
       .from("vendor_packages")
       .select("*")
       .eq("vendor_id", id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
@@ -36,23 +35,24 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id: vendor_id } = await params;
-    const body = await request.json();
-    const { nama_paket, deskripsi, harga } = body;
+    const values = packageInput(await request.json());
 
-    if (!nama_paket || harga === undefined) {
+    if (!values) {
       return NextResponse.json(
-        { error: "Nama paket dan harga wajib diisi" },
+        { error: "Nama paket dan harga harus valid" },
         { status: 400 }
       );
     }
+
+    const { data: vendor, error: vendorError } = await supabase.from("vendors")
+      .select("id").eq("id", vendor_id).eq("user_id", user.id).maybeSingle();
+    if (vendorError) throw vendorError;
+    if (!vendor) return NextResponse.json({ error: "Vendor tidak ditemukan" }, { status: 404 });
 
     const { data, error } = await supabase
       .from("vendor_packages")
@@ -60,9 +60,7 @@ export async function POST(
         {
           vendor_id,
           user_id: user.id,
-          nama_paket,
-          deskripsi,
-          harga,
+          ...values,
           is_final: false,
         },
       ])

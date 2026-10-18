@@ -1,15 +1,12 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
 import { DEFAULT_CHECKLIST_TEMPLATE } from "@/utils/constants";
 
 export async function POST() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     // Fetch all existing tasks for this user
     const { data: existingTasks, error: fetchError } = await supabase

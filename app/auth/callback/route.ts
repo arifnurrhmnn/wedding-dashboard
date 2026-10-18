@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { accountDestination } from "@/lib/auth-redirect";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -11,24 +12,14 @@ export async function GET(request: Request) {
 
     if (!error && data.user) {
       // Cek status user sebelum redirect ke dashboard
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("status")
         .eq("id", data.user.id)
-        .single();
+        .maybeSingle();
 
-      const status = profile?.status;
-
-      if (status === "pending") {
-        return NextResponse.redirect(`${origin}/pending`);
-      }
-
-      if (status === "rejected") {
-        return NextResponse.redirect(`${origin}/rejected`);
-      }
-
-      // Status active atau profile belum ada → ke dashboard
-      return NextResponse.redirect(`${origin}/dashboard`);
+      const destination = accountDestination(profileError ? undefined : profile?.status);
+      return NextResponse.redirect(`${origin}${destination}`);
     }
   }
 

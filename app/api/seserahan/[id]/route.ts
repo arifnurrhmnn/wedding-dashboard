@@ -1,25 +1,24 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { InventoryValidationError, parseInventoryInput } from "@/lib/inventory-input";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
-    const body = await request.json();
+    const body = parseInventoryInput(await request.json(), "seserahan", "patch");
 
     const { data, error } = await supabase
       .from("seserahan")
       .update(body)
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -27,6 +26,9 @@ export async function PATCH(
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof InventoryValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Error updating seserahan:", error);
     return NextResponse.json(
       { error: "Failed to update seserahan" },
@@ -40,21 +42,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
 
-    const { error } = await supabase.from("seserahan").delete().eq("id", id);
+    const { error } = await supabase.from("seserahan").delete().eq("id", id).eq("user_id", user.id);
 
     if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof InventoryValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Error deleting seserahan:", error);
     return NextResponse.json(
       { error: "Failed to delete seserahan" },

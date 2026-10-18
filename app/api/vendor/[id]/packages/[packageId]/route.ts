@@ -1,29 +1,31 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { packageInput } from "../../../_validation";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string; packageId: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const { packageId } = await params;
-    const body = await request.json();
+    const { id: vendorId, packageId } = await params;
+    const values = packageInput(await request.json(), true);
+    if (!values) return NextResponse.json({ error: "Data paket tidak valid" }, { status: 400 });
 
     const { data, error } = await supabase
       .from("vendor_packages")
-      .update(body)
+      .update(values)
       .eq("id", packageId)
+      .eq("vendor_id", vendorId)
+      .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: "Paket tidak ditemukan" }, { status: 404 });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json(
@@ -38,21 +40,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; packageId: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const { packageId } = await params;
+    const { id: vendorId, packageId } = await params;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("vendor_packages")
       .delete()
-      .eq("id", packageId);
+      .eq("id", packageId)
+      .eq("vendor_id", vendorId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: "Paket tidak ditemukan" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json(

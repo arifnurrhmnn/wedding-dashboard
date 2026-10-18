@@ -1,25 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
+
+const preferenceEvent = "sidebar-preference-changed";
+let fallbackMinimized = false;
+function readPreference() {
+  try {
+    return localStorage.getItem("sidebarMinimized") === "true";
+  } catch {
+    return fallbackMinimized;
+  }
+}
+function subscribeToPreference(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(preferenceEvent, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(preferenceEvent, callback);
+  };
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isMinimized, setIsMinimized] = useState(() => {
-    // Initialize from localStorage on mount
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("sidebarMinimized") === "true";
-    }
-    return false;
-  });
+  const isMinimized = useSyncExternalStore(subscribeToPreference, readPreference, () => false);
 
   const toggleSidebar = () => {
     const newState = !isMinimized;
-    setIsMinimized(newState);
-    localStorage.setItem("sidebarMinimized", newState.toString());
+    fallbackMinimized = newState;
+    try { localStorage.setItem("sidebarMinimized", String(newState)); } catch { /* Storage may be disabled. */ }
+    window.dispatchEvent(new Event(preferenceEvent));
   };
 
   return (

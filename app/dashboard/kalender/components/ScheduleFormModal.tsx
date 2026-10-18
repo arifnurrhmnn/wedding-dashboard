@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Schedule } from "@/redux/slices/scheduleSlice";
+import { localDateInput } from "@/lib/schedule";
 
 interface ScheduleFormModalProps {
   open: boolean;
@@ -36,9 +37,9 @@ const getInitialFormData = (
 
     return {
       title: schedule.title,
-      start_date: startDate.toISOString().split("T")[0],
+      start_date: localDateInput(startDate),
       start_time: startDate.toTimeString().slice(0, 5),
-      end_date: endDate ? endDate.toISOString().split("T")[0] : "",
+      end_date: endDate ? localDateInput(endDate) : "",
       end_time: endDate ? endDate.toTimeString().slice(0, 5) : "",
     };
   }
@@ -47,7 +48,7 @@ const getInitialFormData = (
   if (initialDate) {
     return {
       title: "",
-      start_date: initialDate.toISOString().split("T")[0],
+      start_date: localDateInput(initialDate),
       start_time: "09:00",
       end_date: "",
       end_time: "",
@@ -57,14 +58,19 @@ const getInitialFormData = (
   // Default new schedule
   return {
     title: "",
-    start_date: new Date().toISOString().split("T")[0],
+    start_date: localDateInput(new Date()),
     start_time: "09:00",
     end_date: "",
     end_time: "",
   };
 };
 
-export function ScheduleFormModal({
+export function ScheduleFormModal(props: ScheduleFormModalProps) {
+  if (!props.open) return null;
+  return <ScheduleFormContent key={props.schedule?.id ?? props.initialDate?.getTime() ?? "new"} {...props} />;
+}
+
+function ScheduleFormContent({
   open,
   onOpenChange,
   schedule,
@@ -76,22 +82,15 @@ export function ScheduleFormModal({
     getInitialFormData(schedule, initialDate)
   );
 
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setFormData(getInitialFormData(schedule, initialDate));
-    }
-    onOpenChange(newOpen);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Combine date and time
-    const start_datetime = `${formData.start_date}T${formData.start_time}:00`;
+    const start_datetime = new Date(`${formData.start_date}T${formData.start_time}:00`).toISOString();
     const end_datetime =
       formData.end_date && formData.end_time
-        ? `${formData.end_date}T${formData.end_time}:00`
-        : undefined;
+        ? new Date(`${formData.end_date}T${formData.end_time}:00`).toISOString()
+        : null;
 
     onSubmit({
       title: formData.title,
@@ -101,7 +100,7 @@ export function ScheduleFormModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] border-border shadow-2xl bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-2 pb-4">
           <DialogTitle className="text-2xl font-bold text-foreground">
@@ -219,7 +218,7 @@ export function ScheduleFormModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => handleOpenChange(false)}
+              onClick={() => onOpenChange(false)}
               className="flex-1 h-11 border-border hover:bg-secondary"
               disabled={loading}
             >

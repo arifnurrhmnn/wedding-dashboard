@@ -20,7 +20,7 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -228,7 +228,6 @@ interface SidebarProps {
 
 export function Sidebar({ isMinimized, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [userName, setUserName] = useState("Admin");
   const [userEmail, setUserEmail] = useState("");
   const [userInitial, setUserInitial] = useState("A");
@@ -236,35 +235,43 @@ export function Sidebar({ isMinimized, onToggle }: SidebarProps) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
-        const nama =
-          user.user_metadata?.nama || user.email?.split("@")[0] || "Admin";
-        setUserName(nama);
-        setUserEmail(user.email || "");
-        setUserInitial(nama.charAt(0).toUpperCase());
-
         // Cek role dari profiles
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role, avatar_url")
+          .select("nama, role, avatar_url")
           .eq("id", user.id)
           .single();
+        if (!active) return;
+        const nama = profile?.nama || user.user_metadata?.nama || user.email?.split("@")[0] || "User";
+        setUserName(nama);
+        setUserEmail(user.email || "");
+        setUserInitial(nama.charAt(0).toUpperCase());
         setIsAdmin(profile?.role === "admin");
         setUserAvatar(
           profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null
         );
       }
     });
+    return () => { active = false; };
   }, []);
 
   const handleLogout = async () => {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    toast.success("Logout berhasil");
-    router.push("/login");
-    router.refresh();
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error("Gagal logout. Coba lagi.");
+        return;
+      }
+      toast.success("Logout berhasil");
+      window.location.replace("/login");
+    } catch {
+      toast.error("Gagal logout. Coba lagi.");
+    }
   };
 
   return (

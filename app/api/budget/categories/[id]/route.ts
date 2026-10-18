@@ -1,24 +1,28 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { BudgetValidationError, budgetObject, budgetText } from "@/lib/budget-server";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
-    const body = await request.json();
+    const body = budgetObject(await request.json());
+    const updates: Record<string, string> = {};
+    if ("nama" in body) updates.nama = budgetText(body.nama, "Nama", true)!;
+    if ("icon" in body) updates.icon = budgetText(body.icon, "Ikon", true)!;
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: "Tidak ada perubahan kategori" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("budget_categories")
-      .update({ nama: body.nama, icon: body.icon })
+      .update(updates)
       .eq("id", id)
       .eq("user_id", user.id)
       .select()
@@ -26,7 +30,10 @@ export async function PATCH(
 
     if (error) throw error;
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    if (error instanceof BudgetValidationError || error instanceof SyntaxError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "Failed to update category" },
       { status: 500 }
@@ -39,21 +46,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
 
     // check if category has items
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from("budget_items")
       .select("*", { count: "exact", head: true })
       .eq("category_id", id)
       .eq("user_id", user.id);
+    if (countError) throw countError;
 
     if ((count ?? 0) > 0) {
       return NextResponse.json(

@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
 
 export const DEFAULT_WA_TEMPLATE = `Assalamu'alaikum Wr. Wb.
@@ -18,12 +18,9 @@ Wassalamu'alaikum Wr. Wb.`;
 // GET - Ambil template WA milik user (atau default jika belum punya)
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { data } = await supabase
       .from("wa_settings")
@@ -48,12 +45,9 @@ export async function GET() {
 // PATCH - Simpan / update template WA
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { template_pesan } = await request.json();
 

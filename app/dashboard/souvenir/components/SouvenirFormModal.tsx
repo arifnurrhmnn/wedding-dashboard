@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,12 @@ const getInitialFormData = (item: Souvenir | null | undefined) => {
   };
 };
 
-export function SouvenirFormModal({
+export function SouvenirFormModal(props: SouvenirFormModalProps) {
+  if (!props.open) return null;
+  return <SouvenirFormContent key={props.item?.id ?? "new"} {...props} />;
+}
+
+function SouvenirFormContent({
   open,
   onOpenChange,
   item,
@@ -61,16 +66,6 @@ export function SouvenirFormModal({
 }: SouvenirFormModalProps) {
   const [formData, setFormData] = useState(() => getInitialFormData(item));
 
-  useEffect(() => {
-    setFormData(getInitialFormData(item));
-  }, [item]);
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setFormData(getInitialFormData(item));
-    }
-    onOpenChange(newOpen);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +73,7 @@ export function SouvenirFormModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px] border-border shadow-2xl bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-2 pb-4">
           <DialogTitle className="text-2xl font-bold text-foreground">
@@ -242,7 +237,7 @@ export function SouvenirFormModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => handleOpenChange(false)}
+              onClick={() => onOpenChange(false)}
               className="flex-1 h-11 border-border hover:bg-secondary"
               disabled={loading}
             >

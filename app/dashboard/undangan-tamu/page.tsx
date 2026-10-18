@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchGuests, setGuestInvited, Guest } from "@/redux/slices/guestSlice";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ import { toast } from "sonner";
 import axiosClient from "@/lib/axiosClient";
 import { KATEGORI_OPTIONS } from "@/utils/constants";
 import { cn } from "@/lib/utils";
+import { clampPage } from "@/lib/pagination";
 
 const DEFAULT_TEMPLATE = `Assalamu'alaikum Wr. Wb.
 
@@ -102,28 +103,26 @@ export default function UndanganTamuPage() {
   const [isCustomTemplate, setIsCustomTemplate] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState("");
-  const [templateLoading, setTemplateLoading] = useState(false);
+  const [templateLoading, setTemplateLoading] = useState(true);
   const [templateSaving, setTemplateSaving] = useState(false);
 
   useEffect(() => {
     dispatch(fetchGuests());
-    fetchTemplate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let mounted = true;
+    axiosClient.get("/wa-settings")
+      .then((res) => {
+        if (!mounted) return;
+        setWaTemplate(res.data.template_pesan);
+        setIsCustomTemplate(res.data.is_custom);
+      })
+      .catch(() => {
+        if (mounted) setWaTemplate(DEFAULT_TEMPLATE);
+      })
+      .finally(() => {
+        if (mounted) setTemplateLoading(false);
+      });
+    return () => { mounted = false; };
   }, [dispatch]);
-
-  const fetchTemplate = useCallback(async () => {
-    setTemplateLoading(true);
-    try {
-      const res = await axiosClient.get("/wa-settings");
-      setWaTemplate(res.data.template_pesan);
-      setIsCustomTemplate(res.data.is_custom);
-    } catch {
-      // Gunakan default template jika gagal fetch
-      setWaTemplate(DEFAULT_TEMPLATE);
-    } finally {
-      setTemplateLoading(false);
-    }
-  }, []);
 
   const handleOpenTemplateDialog = () => {
     setEditTemplate(waTemplate);
@@ -226,9 +225,10 @@ export default function UndanganTamuPage() {
   }, [list, search, filterKategori, filterUndangan]);
 
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const activePage = clampPage(currentPage, filteredList.length, PAGE_SIZE);
   const paginatedList = filteredList.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE
   );
 
   const totalSudah = useMemo(
@@ -492,15 +492,15 @@ export default function UndanganTamuPage() {
         {filteredList.length > PAGE_SIZE && (
           <div className="flex items-center justify-between px-2">
             <p className="text-sm text-muted-foreground">
-              Halaman {currentPage} dari {totalPages} &nbsp;·&nbsp;{" "}
+              Halaman {activePage} dari {totalPages} &nbsp;·&nbsp;{" "}
               {filteredList.length} tamu
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(Math.max(1, activePage - 1))}
+                disabled={activePage === 1}
                 className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
               >
                 Previous
@@ -509,9 +509,9 @@ export default function UndanganTamuPage() {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  setCurrentPage(Math.min(totalPages, activePage + 1))
                 }
-                disabled={currentPage === totalPages}
+                disabled={activePage === totalPages}
                 className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
               >
                 Next

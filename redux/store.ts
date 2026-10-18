@@ -7,7 +7,7 @@ import scheduleReducer from "./slices/scheduleSlice";
 import vendorReducer from "./slices/vendorSlice";
 import budgetReducer from "./slices/budgetSlice";
 
-export const store = configureStore({
+export const makeStore = () => configureStore({
   reducer: {
     guests: guestReducer,
     seserahan: seserahanReducer,
@@ -19,5 +19,6 @@ export const store = configureStore({
   },
 });
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export type AppStore = ReturnType<typeof makeStore>;
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];

@@ -1,18 +1,17 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { parseChecklistInput } from "@/lib/checklist";
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("checklist")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -28,14 +27,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const body = await request.json();
+    const parsed = parseChecklistInput(await request.json());
+    if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
     const {
       title,
       description,
@@ -44,14 +41,7 @@ export async function POST(request: Request) {
       due_date,
       status,
       priority,
-    } = body;
-
-    if (!title || !category || !timeline_phase) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    } = parsed.value;
 
     const { data, error } = await supabase
       .from("checklist")

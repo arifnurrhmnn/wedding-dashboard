@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -54,7 +54,12 @@ const getInitialFormData = (guest: Guest | null | undefined) => {
   };
 };
 
-export function GuestFormModal({
+export function GuestFormModal(props: GuestFormModalProps) {
+  if (!props.open) return null;
+  return <GuestFormContent key={props.guest?.id ?? "new"} {...props} />;
+}
+
+function GuestFormContent({
   open,
   onOpenChange,
   guest,
@@ -63,18 +68,6 @@ export function GuestFormModal({
 }: GuestFormModalProps) {
   const [formData, setFormData] = useState(() => getInitialFormData(guest));
 
-  // Update formData when guest changes
-  useEffect(() => {
-    setFormData(getInitialFormData(guest));
-  }, [guest]);
-
-  // Reset form when dialog opens/closes or guest changes
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setFormData(getInitialFormData(guest));
-    }
-    onOpenChange(newOpen);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +75,7 @@ export function GuestFormModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] border-border shadow-2xl bg-card">
         <DialogHeader className="space-y-2 pb-4">
           <DialogTitle className="text-2xl font-bold text-foreground">

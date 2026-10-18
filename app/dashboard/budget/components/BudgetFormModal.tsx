@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
+import { getBudgetPaid, getBudgetStatus, getLinkedBudgetModule } from "@/lib/budget";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 import { BudgetItem, BudgetCategory } from "@/redux/slices/budgetSlice";
 import { Vendor } from "@/redux/slices/vendorSlice";
 
@@ -52,13 +53,13 @@ const getInitialForm = (
   estimasi: item?.estimasi ? String(item.estimasi) : "",
   dp: item?.dp ? String(item.dp) : "",
   tanggal_dp: item?.tanggal_dp ?? "",
-  realisasi: item?.realisasi ? String(item.realisasi) : "",
+  realisasi: item && getBudgetPaid(item) > 0 ? String(getBudgetPaid(item)) : "",
   tanggal_lunas: item?.tanggal_lunas ?? "",
   catatan: item?.catatan ?? "",
   vendor_id: item?.vendor_id ?? "",
 });
 
-export function BudgetFormModal({
+function BudgetFormContent({
   open,
   onOpenChange,
   item,
@@ -73,11 +74,6 @@ export function BudgetFormModal({
     getInitialForm(item, defaultCategoryId)
   );
 
-  useEffect(() => {
-    if (open) setForm(getInitialForm(item, defaultCategoryId));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   const set = (key: string, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -85,31 +81,37 @@ export function BudgetFormModal({
   const dpNum = Number(form.dp) || 0;
   const realisasiNum = Number(form.realisasi) || 0;
   const hasDp = dpNum > 0;
-  const sisa = estimasiNum - realisasiNum;
-
-  const autoStatus: BudgetItem["status"] = useMemo(() => {
-    if (realisasiNum > 0 && estimasiNum > 0 && realisasiNum >= estimasiNum)
-      return "lunas";
-    if (dpNum > 0 || realisasiNum > 0) return "dp";
-    return "belum_bayar";
-  }, [dpNum, realisasiNum, estimasiNum]);
+  const paid = getBudgetPaid({ dp: dpNum, realisasi: realisasiNum });
+  const sisa = Math.max(estimasiNum - paid, 0);
+  const autoStatus = getBudgetStatus({ dp: dpNum, realisasi: realisasiNum, estimasi: estimasiNum });
 
   const isLunas = autoStatus === "lunas";
+  const selectedCategory = categories.find(
+    (category) => category.id === form.category_id
+  );
+  const linkedModule = getLinkedBudgetModule(selectedCategory?.nama ?? "");
+  const linkedLabel = linkedModule === "seserahan"
+    ? "Seserahan"
+    : linkedModule === "souvenir"
+      ? "Souvenir"
+      : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit({
       category_id: form.category_id,
-      nama: form.nama,
+      nama: form.nama.trim(),
       estimasi: estimasiNum,
       dp: dpNum,
-      tanggal_dp: form.tanggal_dp || undefined,
-      realisasi: realisasiNum,
-      tanggal_lunas: form.tanggal_lunas || undefined,
+      tanggal_dp: hasDp ? form.tanggal_dp || null : null,
+      realisasi: paid,
+      tanggal_lunas: isLunas ? form.tanggal_lunas || null : null,
       status: autoStatus,
-      tanggal_bayar: form.tanggal_dp || form.tanggal_lunas || undefined,
-      catatan: form.catatan || undefined,
-      vendor_id: form.vendor_id || undefined,
+      tanggal_bayar: paid > 0
+        ? (isLunas ? form.tanggal_lunas : "") || (hasDp ? form.tanggal_dp : "") || null
+        : null,
+      catatan: form.catatan.trim() || null,
+      vendor_id: form.vendor_id || null,
     });
   };
 
@@ -118,10 +120,14 @@ export function BudgetFormModal({
       <DialogContent className="sm:max-w-[580px] border-border shadow-2xl bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-2 pb-4">
           <DialogTitle className="text-2xl font-bold text-foreground">
-            {isEdit ? "Edit" : "Tambah"} Item Budget
+            {linkedLabel
+              ? `${isEdit ? "Edit" : "Tambah"} Biaya di Luar Item`
+              : `${isEdit ? "Edit" : "Tambah"} Item Budget`}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            {isEdit
+            {linkedLabel
+              ? `Catat ongkir, kemasan, jasa, atau biaya lain yang belum ada di menu ${linkedLabel}.`
+              : isEdit
               ? "Update informasi pengeluaran"
               : "Catat rencana atau realisasi pengeluaran"}
           </DialogDescription>
@@ -135,14 +141,19 @@ export function BudgetFormModal({
                 htmlFor="nama"
                 className="text-sm font-medium text-foreground"
               >
-                Nama Item <span className="text-destructive">*</span>
+                {linkedLabel ? "Nama Biaya" : "Nama Item"}{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="nama"
                 value={form.nama}
                 onChange={(e) => set("nama", e.target.value)}
                 className="w-full h-11 px-3 bg-input border-border focus:border-primary focus:ring-primary/20"
-                placeholder="cth: Gedung Resepsi, Katering, Fotografer"
+                placeholder={
+                  linkedLabel
+                    ? "Contoh: Ongkir, kemasan, atau jasa dekorasi"
+                    : "Contoh: Gedung resepsi, katering, atau fotografer"
+                }
                 required
               />
             </div>
@@ -174,6 +185,20 @@ export function BudgetFormModal({
                   ))}
                 </SelectContent>
               </Select>
+              {linkedLabel && (
+                <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
+                  <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-foreground">
+                      Hindari pencatatan ganda
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Total item dari menu {linkedLabel} sudah masuk ke budget secara otomatis.
+                      Jangan tambahkan kembali barang yang sudah tercatat di sana.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Estimasi */}
@@ -284,10 +309,10 @@ export function BudgetFormModal({
               <div className="flex items-center gap-2">
                 <span className="text-base">✅</span>
                 <p className="text-sm font-semibold text-foreground">
-                  Pelunasan
+                  Pembayaran
                 </p>
                 <span className="text-xs text-muted-foreground">
-                  (isi jika sudah lunas)
+                  (termasuk DP dan cicilan)
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -296,7 +321,7 @@ export function BudgetFormModal({
                     htmlFor="realisasi"
                     className="text-sm font-medium text-foreground"
                   >
-                    Total Sudah Dibayar
+                    Total Sudah Dibayar (termasuk DP)
                   </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
@@ -320,9 +345,9 @@ export function BudgetFormModal({
                       placeholder="0"
                     />
                   </div>
-                  {realisasiNum > 0 && (
+                  {paid > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      = {fmt(realisasiNum)}
+                      Total pembayaran: {fmt(paid)}. DP sudah termasuk dalam total ini.
                     </p>
                   )}
                 </div>
@@ -338,7 +363,7 @@ export function BudgetFormModal({
                     type="date"
                     value={form.tanggal_lunas}
                     onChange={(e) => set("tanggal_lunas", e.target.value)}
-                    disabled={!isLunas && realisasiNum === 0}
+                    disabled={!isLunas}
                     className="w-full h-11 px-3 bg-input border-border focus:border-primary focus:ring-primary/20 disabled:opacity-40"
                   />
                 </div>
@@ -372,7 +397,7 @@ export function BudgetFormModal({
                       </p>
                     </div>
                   )}
-                  {estimasiNum > 0 && realisasiNum < estimasiNum && (
+                  {estimasiNum > 0 && paid < estimasiNum && (
                     <div>
                       <p className="text-xs text-muted-foreground">
                         Sisa Tagihan
@@ -476,7 +501,7 @@ export function BudgetFormModal({
             </Button>
             <Button
               type="submit"
-              disabled={loading || !form.category_id || !form.nama}
+              disabled={loading || !form.category_id || !form.nama.trim()}
               className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white font-medium shadow-md"
             >
               {loading ? (
@@ -485,7 +510,7 @@ export function BudgetFormModal({
                   Menyimpan...
                 </div>
               ) : (
-                "Simpan"
+                linkedLabel ? "Simpan biaya" : "Simpan"
               )}
             </Button>
           </DialogFooter>
@@ -493,4 +518,10 @@ export function BudgetFormModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+export function BudgetFormModal(props: BudgetFormModalProps) {
+  return props.open ? (
+    <BudgetFormContent key={props.item?.id ?? props.defaultCategoryId ?? "new"} {...props} />
+  ) : null;
 }

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password, nama } = await req.json();
 
-    if (!email || !password || !nama) {
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string" || typeof nama !== "string" || !nama.trim()) {
       return NextResponse.json(
         { error: "Data tidak lengkap" },
         { status: 400 }

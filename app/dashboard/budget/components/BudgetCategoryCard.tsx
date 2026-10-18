@@ -12,9 +12,11 @@ import {
   AlertTriangle,
   ExternalLink,
   Lock,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getBudgetPaid, getBudgetStatus } from "@/lib/budget";
 import {
   Dialog,
   DialogContent,
@@ -84,20 +86,18 @@ export function BudgetCategoryCard({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<BudgetItem | null>(null);
 
-  // Apakah ini kategori yang di-lock (linked ke modul lain)
+  // A linked category includes the module summary and editable additional items.
   const isLinkedCategory = !!linkedSummary;
 
   const { totalEstimasi, totalRealisasi, lunas, dp, belum } = useMemo(() => {
     const est = items.reduce((s, i) => s + (i.estimasi || 0), 0);
-    const real = items.reduce((s, i) => s + (i.realisasi || 0), 0);
-    const pct = est > 0 ? Math.min(Math.round((real / est) * 100), 100) : 0;
-    void pct; // used via displayPersen
+    const real = items.reduce((s, i) => s + getBudgetPaid(i), 0);
     return {
       totalEstimasi: est,
       totalRealisasi: real,
-      lunas: items.filter((i) => i.status === "lunas").length,
-      dp: items.filter((i) => i.status === "dp").length,
-      belum: items.filter((i) => i.status === "belum_bayar").length,
+      lunas: items.filter((i) => getBudgetStatus(i) === "lunas").length,
+      dp: items.filter((i) => getBudgetStatus(i) === "dp").length,
+      belum: items.filter((i) => getBudgetStatus(i) === "belum_bayar").length,
     };
   }, [items]);
 
@@ -106,11 +106,8 @@ export function BudgetCategoryCard({
     setDeleteConfirmOpen(true);
   };
 
-  // Progress bar values: pakai budget items jika ada, fallback ke linked summary
-  const displayEstimasi =
-    totalEstimasi > 0 ? totalEstimasi : linkedSummary?.totalEstimasi ?? 0;
-  const displayRealisasi =
-    totalRealisasi > 0 ? totalRealisasi : linkedSummary?.totalRealisasi ?? 0;
+  const displayEstimasi = totalEstimasi + (linkedSummary?.totalEstimasi ?? 0);
+  const displayRealisasi = totalRealisasi + (linkedSummary?.totalRealisasi ?? 0);
   const displayPersen =
     displayEstimasi > 0
       ? Math.min(Math.round((displayRealisasi / displayEstimasi) * 100), 100)
@@ -137,13 +134,15 @@ export function BudgetCategoryCard({
             {isLinkedCategory && (
               <span className="flex items-center gap-1 text-xs text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
                 <Lock className="h-2.5 w-2.5" />
-                Auto-sync
+                Dari {linkedSummary!.label}
               </span>
             )}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {!isLinkedCategory && items.length > 0 && (
+              {items.length > 0 && (
                 <>
-                  <span>{items.length} item</span>
+                  <span>
+                    {items.length} {isLinkedCategory ? "biaya lain" : "item"}
+                  </span>
                   {lunas > 0 && (
                     <span className="text-green-400">· {lunas} lunas</span>
                   )}
@@ -187,17 +186,30 @@ export function BudgetCategoryCard({
           onClick={(e) => e.stopPropagation()}
         >
           {isLinkedCategory ? (
-            /* Linked category: hanya tombol "Kelola" yang redirect ke menu modul */
-            <Link href={linkedSummary!.href}>
+            <div className="flex items-center gap-1">
               <Button
                 size="sm"
-                className="h-7 px-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0 shadow-none gap-1"
-                variant="outline"
+                variant="ghost"
+                className="h-7 px-2 text-xs"
+                aria-label={`Tambah biaya di luar item ${linkedSummary!.label}`}
+                onClick={() => onAddItem(category.id)}
               >
-                <ExternalLink className="h-3 w-3" />
-                Kelola
+                <Plus className="h-3 w-3" />
+                <span className="hidden lg:inline">Biaya di luar item</span>
+                <span className="lg:hidden">Biaya lain</span>
               </Button>
-            </Link>
+              <Link href={linkedSummary!.href}>
+                <Button
+                  size="sm"
+                  className="h-7 px-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0 shadow-none gap-1"
+                  variant="outline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span className="hidden lg:inline">Kelola item</span>
+                  <span className="lg:hidden">Kelola</span>
+                </Button>
+              </Link>
+            </div>
           ) : (
             /* Normal category: edit, delete, tambah */
             <>
@@ -266,6 +278,20 @@ export function BudgetCategoryCard({
             </div>
           </div>
 
+          <div className="flex items-start gap-2.5 px-4 py-3 border-t border-border bg-primary/[0.04]">
+            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-foreground">
+                Biaya item sudah dihitung otomatis
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Gunakan “Biaya di luar item” hanya untuk ongkir, kemasan, jasa,
+                atau biaya lain yang belum dicatat di menu {linkedSummary.label}.
+                Jangan masukkan item yang sama dua kali.
+              </p>
+            </div>
+          </div>
+
           {/* Empty state */}
           {linkedSummary.count === 0 && (
             <div className="px-4 py-5 text-center">
@@ -282,26 +308,22 @@ export function BudgetCategoryCard({
             </div>
           )}
 
-          {/* Footer CTA */}
-          <div className="px-4 py-2.5 bg-muted/10 border-t border-border flex items-center justify-between">
-            <p className="text-xs text-muted-foreground italic">
-              Data diambil otomatis dari menu {linkedSummary.label}
-            </p>
-            <Link
-              href={linkedSummary.href}
-              className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
-            >
-              <Plus className="h-3 w-3" />
-              Tambah {linkedSummary.label}
-              <ExternalLink className="h-3 w-3" />
-            </Link>
-          </div>
         </div>
       )}
 
-      {/* Normal category: budget items */}
-      {!isLinkedCategory && expanded && (
+      {/* Manual items remain editable in both ordinary and linked categories. */}
+      {expanded && (!isLinkedCategory || items.length > 0) && (
         <div className="border-t border-border">
+          {isLinkedCategory && (
+            <div className="px-4 py-2.5 bg-muted/10">
+              <p className="text-xs font-medium text-foreground">
+                Biaya di luar item {linkedSummary!.label}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Biaya berikut ditambahkan di luar total otomatis dari menu {linkedSummary!.label}.
+              </p>
+            </div>
+          )}
           {items.length === 0 ? (
             <div className="px-4 py-6 text-center">
               <p className="text-sm text-muted-foreground italic">
@@ -329,35 +351,35 @@ export function BudgetCategoryCard({
                       <span
                         className={cn(
                           "text-xs px-2 py-0.5 rounded-full font-medium",
-                          STATUS_CONFIG[item.status].className
+                          STATUS_CONFIG[getBudgetStatus(item)].className
                         )}
                       >
-                        {STATUS_CONFIG[item.status].label}
+                        {STATUS_CONFIG[getBudgetStatus(item)].label}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
                       {item.estimasi > 0 && (
                         <span>Total: {fmt(item.estimasi)}</span>
                       )}
-                      {item.dp > 0 && item.status !== "lunas" && (
+                      {item.dp > 0 && getBudgetStatus(item) !== "lunas" && (
                         <span className="text-yellow-400">
                           DP: {fmt(item.dp)}
                         </span>
                       )}
-                      {item.status === "dp" && item.estimasi > 0 && (
+                      {getBudgetStatus(item) === "dp" && item.estimasi > 0 && (
                         <span className="text-destructive">
                           Sisa:{" "}
                           {fmt(
-                            item.estimasi - (item.realisasi || item.dp || 0)
+                            Math.max(item.estimasi - getBudgetPaid(item), 0)
                           )}
                         </span>
                       )}
-                      {item.status === "lunas" && item.realisasi > 0 && (
+                      {getBudgetPaid(item) > 0 && (
                         <span className="text-green-400">
-                          Dibayar: {fmt(item.realisasi)}
+                          Dibayar: {fmt(getBudgetPaid(item))}
                         </span>
                       )}
-                      {item.tanggal_dp && item.status === "dp" && (
+                      {item.tanggal_dp && getBudgetStatus(item) === "dp" && (
                         <span>
                           DP:{" "}
                           {new Intl.DateTimeFormat("id-ID", {
@@ -367,7 +389,7 @@ export function BudgetCategoryCard({
                           }).format(new Date(item.tanggal_dp))}
                         </span>
                       )}
-                      {item.tanggal_lunas && item.status === "lunas" && (
+                      {item.tanggal_lunas && getBudgetStatus(item) === "lunas" && (
                         <span>
                           Lunas:{" "}
                           {new Intl.DateTimeFormat("id-ID", {

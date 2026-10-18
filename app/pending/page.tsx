@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -8,7 +7,6 @@ import { Heart, Clock, LogOut, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PendingPage() {
-  const router = useRouter();
   const [checking, setChecking] = useState(false);
 
   const handleCheckStatus = useCallback(async () => {
@@ -20,15 +18,20 @@ export default function PendingPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push("/login");
+        window.location.replace("/login");
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("status")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        toast.error("Gagal mengecek status. Coba lagi.");
+        return;
+      }
 
       if (!profile) {
         toast.error("Profil tidak ditemukan");
@@ -37,10 +40,15 @@ export default function PendingPage() {
 
       if (profile.status === "active") {
         toast.success("Akun kamu sudah disetujui! Mengarahkan ke dashboard...");
-        router.push("/dashboard");
+        // Approval usually happens in another admin session. Force a fresh
+        // document request so middleware does not reuse a cached pending
+        // redirect from the App Router cache.
+        window.location.replace("/dashboard");
+        return;
       } else if (profile.status === "rejected") {
         toast.error("Akun kamu ditolak oleh admin.");
-        router.push("/rejected");
+        window.location.replace("/rejected");
+        return;
       } else {
         toast.info("Akun kamu masih menunggu persetujuan admin.");
       }
@@ -49,13 +57,21 @@ export default function PendingPage() {
     } finally {
       setChecking(false);
     }
-  }, [router]);
+  }, []);
 
   const handleLogout = async () => {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    toast.success("Logout berhasil");
-    router.push("/login");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error("Gagal logout. Coba lagi.");
+        return;
+      }
+      toast.success("Logout berhasil");
+      window.location.replace("/login");
+    } catch {
+      toast.error("Gagal logout. Coba lagi.");
+    }
   };
 
   return (

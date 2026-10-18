@@ -5,10 +5,10 @@ export interface ChecklistTask {
   id: string;
   unique_id?: string;
   title: string;
-  description?: string;
+  description?: string | null;
   category: string;
   timeline_phase: string;
-  due_date?: string;
+  due_date?: string | null;
   status: string;
   priority: string;
   created_at?: string;

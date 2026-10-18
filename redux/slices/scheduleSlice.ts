@@ -5,7 +5,7 @@ export interface Schedule {
   id: string;
   title: string;
   start_datetime: string;
-  end_datetime?: string;
+  end_datetime?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -13,24 +13,28 @@ export interface Schedule {
 interface ScheduleState {
   list: Schedule[];
   loading: boolean;
+  fetchRequestId: string | null;
   error: string | null;
 }
 
 const initialState: ScheduleState = {
   list: [],
   loading: false,
+  fetchRequestId: null,
   error: null,
 };
 
 // Thunks
 export const fetchSchedules = createAsyncThunk(
   "schedules/fetchSchedules",
-  async (params: { month?: string } = {}, { rejectWithValue }) => {
+  async (params: { month?: string; start?: string; end?: string } = {}, { rejectWithValue, signal }) => {
     try {
-      const url = params.month
-        ? `/schedule?month=${params.month}`
-        : "/schedule";
-      const response = await axiosClient.get(url);
+      const search = new URLSearchParams();
+      if (params.month) search.set("month", params.month);
+      if (params.start) search.set("start", params.start);
+      if (params.end) search.set("end", params.end);
+      const url = search.size ? `/schedule?${search}` : "/schedule";
+      const response = await axiosClient.get(url, { signal });
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -101,20 +105,27 @@ const scheduleSlice = createSlice({
   extraReducers: (builder) => {
     // Fetch schedules
     builder
-      .addCase(fetchSchedules.pending, (state) => {
+      .addCase(fetchSchedules.pending, (state, action) => {
         state.loading = true;
         state.error = null;
+        state.fetchRequestId = action.meta.requestId;
       })
       .addCase(
         fetchSchedules.fulfilled,
-        (state, action: PayloadAction<Schedule[]>) => {
+        (state, action) => {
+          if (state.fetchRequestId !== action.meta.requestId) return;
           state.loading = false;
+          state.fetchRequestId = null;
           state.list = action.payload;
         }
       )
       .addCase(fetchSchedules.rejected, (state, action) => {
+        if (state.fetchRequestId !== action.meta.requestId) return;
         state.loading = false;
-        state.error = action.payload as string;
+        state.fetchRequestId = null;
+        if (!action.meta.aborted) {
+          state.error = (action.payload as string) || action.error.message || "Failed to fetch schedules";
+        }
       });
 
     // Add schedule

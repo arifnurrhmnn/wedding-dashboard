@@ -55,6 +55,7 @@ interface VendorState {
   selectedVendor: Vendor | null;
   loading: boolean;
   detailLoading: boolean;
+  detailRequestId: string | null;
   error: string | null;
 }
 
@@ -63,6 +64,7 @@ const initialState: VendorState = {
   selectedVendor: null,
   loading: false,
   detailLoading: false,
+  detailRequestId: null,
   error: null,
 };
 
@@ -85,9 +87,9 @@ export const fetchVendors = createAsyncThunk(
 
 export const fetchVendorDetail = createAsyncThunk(
   "vendor/fetchVendorDetail",
-  async (id: string, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue, signal }) => {
     try {
-      const res = await axiosClient.get(`/vendor/${id}`);
+      const res = await axiosClient.get(`/vendor/${id}`, { signal });
       return res.data;
     } catch (error) {
       return rejectWithValue(
@@ -300,6 +302,8 @@ const vendorSlice = createSlice({
   reducers: {
     clearSelectedVendor(state) {
       state.selectedVendor = null;
+      state.detailRequestId = null;
+      state.detailLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -320,16 +324,23 @@ const vendorSlice = createSlice({
 
     // fetchVendorDetail
     builder
-      .addCase(fetchVendorDetail.pending, (state) => {
+      .addCase(fetchVendorDetail.pending, (state, action) => {
         state.detailLoading = true;
+        state.detailRequestId = action.meta.requestId;
+        state.selectedVendor = null;
+        state.error = null;
       })
       .addCase(fetchVendorDetail.fulfilled, (state, action) => {
+        if (state.detailRequestId !== action.meta.requestId) return;
         state.detailLoading = false;
+        state.detailRequestId = null;
         state.selectedVendor = action.payload;
       })
       .addCase(fetchVendorDetail.rejected, (state, action) => {
+        if (state.detailRequestId !== action.meta.requestId) return;
         state.detailLoading = false;
-        state.error = action.payload as string;
+        state.detailRequestId = null;
+        if (!action.meta.aborted) state.error = action.payload as string;
       });
 
     // addVendor

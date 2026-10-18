@@ -29,6 +29,7 @@ import {
 import { VendorTable } from "./components/VendorTable";
 import { VendorFormModal } from "./components/VendorFormModal";
 import { toast } from "sonner";
+import { totalContractValue } from "./vendor-utils";
 
 export default function VendorPage() {
   const dispatch = useAppDispatch();
@@ -47,10 +48,7 @@ export default function VendorPage() {
   const totalVendor = list.length;
   const totalDeal = list.filter((v) => v.status === "deal").length;
   const totalNego = list.filter((v) => v.status === "negosiasi").length;
-  const totalNilaiKontrak = list.reduce((sum, v) => {
-    const finalPkg = v.vendor_packages?.find((p) => p.is_final);
-    return sum + (finalPkg?.harga || 0);
-  }, 0);
+  const totalNilaiKontrak = totalContractValue(list);
 
   // ── Handlers ──
   const handleAdd = () => {
@@ -190,14 +188,16 @@ export default function VendorPage() {
       )}
 
       {/* Form Modal */}
-      <VendorFormModal
-        key={editingVendor?.id ?? "new"}
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        vendor={editingVendor}
-        onSubmit={handleSubmit}
-        loading={loading}
-      />
+      {isModalOpen && (
+        <VendorFormModal
+          key={editingVendor?.id ?? "new"}
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          vendor={editingVendor}
+          onSubmit={handleSubmit}
+          loading={loading}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

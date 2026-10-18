@@ -1,18 +1,18 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { vendorInput } from "./_validation";
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("vendors")
       .select(`*, vendor_packages(*)`)
+      .eq("user_id", user.id)
+      .eq("vendor_packages.user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -27,30 +27,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const body = await request.json();
-    const {
-      nama,
-      kategori,
-      kontak_nama,
-      kontak_wa,
-      kontak_email,
-      website,
-      instagram,
-      alamat,
-      catatan,
-      status,
-    } = body;
-
-    if (!nama || !kategori) {
+    const values = vendorInput(await request.json());
+    if (!values) {
       return NextResponse.json(
-        { error: "Nama dan kategori wajib diisi" },
+        { error: "Data vendor tidak valid; nama dan kategori wajib diisi" },
         { status: 400 }
       );
     }
@@ -60,16 +44,8 @@ export async function POST(request: Request) {
       .insert([
         {
           user_id: user.id,
-          nama,
-          kategori,
-          kontak_nama,
-          kontak_wa,
-          kontak_email,
-          website,
-          instagram,
-          alamat,
-          catatan,
-          status: status || "prospek",
+          ...values,
+          status: values.status || "prospek",
         },
       ])
       .select()

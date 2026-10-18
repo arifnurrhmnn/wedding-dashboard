@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,12 @@ const getInitialFormData = (item: Seserahan | null | undefined) => {
   };
 };
 
-export function SeserahanFormModal({
+export function SeserahanFormModal(props: SeserahanFormModalProps) {
+  if (!props.open) return null;
+  return <SeserahanFormContent key={props.item?.id ?? "new"} {...props} />;
+}
+
+function SeserahanFormContent({
   open,
   onOpenChange,
   item,
@@ -66,16 +71,6 @@ export function SeserahanFormModal({
 }: SeserahanFormModalProps) {
   const [formData, setFormData] = useState(() => getInitialFormData(item));
 
-  useEffect(() => {
-    setFormData(getInitialFormData(item));
-  }, [item]);
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setFormData(getInitialFormData(item));
-    }
-    onOpenChange(newOpen);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +78,7 @@ export function SeserahanFormModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] border-border shadow-2xl bg-card max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-2 pb-4">
           <DialogTitle className="text-2xl font-bold text-foreground">
@@ -270,7 +265,7 @@ export function SeserahanFormModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => handleOpenChange(false)}
+              onClick={() => onOpenChange(false)}
               className="flex-1 h-11 border-border hover:bg-secondary"
               disabled={loading}
             >

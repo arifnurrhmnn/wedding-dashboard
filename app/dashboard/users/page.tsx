@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import axiosClient from "@/lib/axiosClient";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { toast } from "sonner";
@@ -72,7 +71,6 @@ interface UserProfile {
 type FilterTab = "all" | UserStatus;
 
 export default function UsersPage() {
-  const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -101,7 +99,7 @@ export default function UsersPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push("/login");
+        window.location.replace("/login");
         return;
       }
 
@@ -112,7 +110,7 @@ export default function UsersPage() {
         .single();
 
       if (profile?.role !== "admin") {
-        router.push("/dashboard");
+        window.location.replace("/dashboard");
         return;
       }
 
@@ -120,7 +118,7 @@ export default function UsersPage() {
       fetchUsers();
     };
     init();
-  }, [router]);
+  }, []);
 
   const fetchUsers = async () => {
     setLoading(true);

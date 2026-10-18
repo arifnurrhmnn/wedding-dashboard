@@ -1,14 +1,12 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { BudgetValidationError, budgetAmount, budgetObject, budgetText } from "@/lib/budget-server";
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("budget_settings")
@@ -28,15 +26,13 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const body = await request.json();
-    const { total_budget, catatan } = body;
+    const body = budgetObject(await request.json());
+    const total_budget = budgetAmount(body.total_budget, "Total budget");
+    const catatan = "catatan" in body ? budgetText(body.catatan, "Catatan") : undefined;
 
     const { data, error } = await supabase
       .from("budget_settings")
@@ -56,7 +52,10 @@ export async function PATCH(request: Request) {
 
     if (error) throw error;
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    if (error instanceof BudgetValidationError || error instanceof SyntaxError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "Failed to update budget settings" },
       { status: 500 }

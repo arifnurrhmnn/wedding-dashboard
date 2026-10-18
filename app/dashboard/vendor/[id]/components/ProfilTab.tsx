@@ -52,6 +52,37 @@ interface ProfilTabProps {
   onEdit: () => void;
 }
 
+const InfoRow = ({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  href?: string;
+}) => (
+  <div className="flex items-start gap-3">
+    <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+    <div className="min-w-0">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-primary hover:underline break-all"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="text-sm text-foreground wrap-break-word">{value}</p>
+      )}
+    </div>
+  </div>
+);
+
 export function ProfilTab({ vendor, onEdit }: ProfilTabProps) {
   const dispatch = useAppDispatch();
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -72,37 +103,6 @@ export function ProfilTab({ vendor, onEdit }: ProfilTabProps) {
       setUpdatingStatus(false);
     }
   };
-
-  const InfoRow = ({
-    icon: Icon,
-    label,
-    value,
-    href,
-  }: {
-    icon: React.ElementType;
-    label: string;
-    value: string;
-    href?: string;
-  }) => (
-    <div className="flex items-start gap-3">
-      <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        {href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline break-all"
-          >
-            {value}
-          </a>
-        ) : (
-          <p className="text-sm text-foreground wrap-break-word">{value}</p>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">

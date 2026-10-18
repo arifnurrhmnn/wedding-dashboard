@@ -38,11 +38,13 @@ export default function DashboardHomePage() {
   const [userName, setUserName] = useState("User");
 
   useEffect(() => {
+    let active = true;
     const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
-        const nama =
-          user.user_metadata?.nama || user.email?.split("@")[0] || "User";
+        const { data: profile } = await supabase.from("profiles").select("nama").eq("id", user.id).maybeSingle();
+        if (!active) return;
+        const nama = profile?.nama || user.user_metadata?.nama || user.email?.split("@")[0] || "User";
         setUserName(nama);
       }
     });
@@ -51,13 +53,14 @@ export default function DashboardHomePage() {
     dispatch(fetchChecklist());
     dispatch(fetchSeserahan());
     dispatch(fetchSouvenir());
+    return () => { active = false; };
   }, [dispatch]);
 
   // Guest stats
   const totalGuests = guests.length;
   const totalQty = guests.reduce((sum, g) => sum + (g.qty || 0), 0);
   const guestInvited = guests.filter((g) => g.is_invited).length;
-  const guestHadir = guests.filter((g) => g.kategori === "Hadir").length;
+  const guestNotInvited = guests.filter((g) => !g.is_invited).length;
 
   // Checklist stats
   const totalTasks = checklist.length;
@@ -521,9 +524,9 @@ export default function DashboardHomePage() {
               </p>
             </div>
             <div className="text-center p-3 bg-green-500/10 rounded-lg">
-              <p className="text-2xl font-bold text-green-500">{guestHadir}</p>
+              <p className="text-2xl font-bold text-amber-500">{guestNotInvited}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Konfirmasi Hadir
+                Belum Diundang
               </p>
             </div>
           </div>

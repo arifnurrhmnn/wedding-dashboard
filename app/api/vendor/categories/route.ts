@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { requireActiveUser } from "@/lib/api-auth";
 
-export const VENDOR_CATEGORIES = [
+const VENDOR_CATEGORIES = [
   { value: "Foto & Video", icon: "📸" },
   { value: "Katering & Konsumsi", icon: "🍽️" },
   { value: "Venue & Gedung", icon: "🏛️" },
@@ -16,5 +17,7 @@ export const VENDOR_CATEGORIES = [
 ];
 
 export async function GET() {
+  const auth = await requireActiveUser();
+  if (auth.response) return auth.response;
   return NextResponse.json(VENDOR_CATEGORIES);
 }

@@ -1,17 +1,16 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { parseScheduleInput, parseScheduleRange } from "@/lib/schedule";
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { searchParams } = new URL(request.url);
-    const month = searchParams.get("month");
+    const range = parseScheduleRange(searchParams);
+    if ("error" in range) return NextResponse.json({ error: range.error }, { status: 400 });
 
     let query = supabase
       .from("schedules")
@@ -19,17 +18,10 @@ export async function GET(request: Request) {
       .eq("user_id", user.id)
       .order("start_datetime", { ascending: true });
 
-    // Filter by month if provided (format: YYYY-MM)
-    if (month) {
-      const [year, monthNum] = month.split("-");
-      const startDate = `${year}-${monthNum}-01`;
-      const endDate = new Date(parseInt(year), parseInt(monthNum), 0)
-        .toISOString()
-        .split("T")[0];
-
+    if (range.value) {
       query = query
-        .gte("start_datetime", startDate)
-        .lte("start_datetime", endDate);
+        .gte("start_datetime", range.value.start)
+        .lt("start_datetime", range.value.end);
     }
 
     const { data, error } = await query;
@@ -48,30 +40,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const body = await request.json();
-    const { title, start_datetime, end_datetime } = body;
-
-    if (!title || !start_datetime) {
-      return NextResponse.json(
-        { error: "Missing required fields: title, start_datetime" },
-        { status: 400 }
-      );
-    }
-
-    // Validate end_datetime >= start_datetime
-    if (end_datetime && new Date(end_datetime) < new Date(start_datetime)) {
-      return NextResponse.json(
-        { error: "End datetime must be after start datetime" },
-        { status: 400 }
-      );
-    }
+    const parsed = parseScheduleInput(await request.json());
+    if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { title, start_datetime, end_datetime } = parsed.value;
 
     const { data, error } = await supabase
       .from("schedules")

@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function Home() {
-  const router = useRouter();
-
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createSupabaseBrowserClient();
@@ -14,13 +11,13 @@ export default function Home() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.replace("/dashboard");
+        window.location.replace("/dashboard");
       } else {
-        router.replace("/login");
+        window.location.replace("/login");
       }
     };
     checkAuth();
-  }, [router]);
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

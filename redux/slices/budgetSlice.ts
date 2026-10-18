@@ -5,7 +5,7 @@ import axiosClient from "@/lib/axiosClient";
 export interface BudgetSettings {
   id: string;
   total_budget: number;
-  catatan?: string;
+  catatan?: string | null;
   updated_at?: string;
 }
 
@@ -25,13 +25,13 @@ export interface BudgetItem {
   estimasi: number;
   realisasi: number;
   dp: number;
-  tanggal_dp?: string;
-  tanggal_lunas?: string;
+  tanggal_dp?: string | null;
+  tanggal_lunas?: string | null;
   status: "belum_bayar" | "dp" | "lunas";
-  tanggal_bayar?: string;
-  catatan?: string;
-  vendor_id?: string;
-  vendor_nama?: string;
+  tanggal_bayar?: string | null;
+  catatan?: string | null;
+  vendor_id?: string | null;
+  vendor_nama?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -195,7 +195,9 @@ const budgetSlice = createSlice({
         state.error = action.error.message ?? null;
       })
       .addCase(addBudgetCategory.fulfilled, (state, action) => {
-        state.categories.push(action.payload);
+        const index = state.categories.findIndex((category) => category.id === action.payload.id);
+        if (index === -1) state.categories.push(action.payload);
+        else state.categories[index] = action.payload;
       })
       .addCase(updateBudgetCategory.fulfilled, (state, action) => {
         const idx = state.categories.findIndex(
@@ -216,7 +218,9 @@ const budgetSlice = createSlice({
         );
       })
       .addCase(generateDefaultCategories.fulfilled, (state, action) => {
-        state.categories = action.payload;
+        const categories = new Map(state.categories.map((category) => [category.id, category]));
+        for (const category of action.payload) categories.set(category.id, category);
+        state.categories = Array.from(categories.values()).sort((a, b) => a.urutan - b.urutan);
       });
 
     // Items

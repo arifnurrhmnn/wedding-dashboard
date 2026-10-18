@@ -1,19 +1,69 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
-import { Heart, XCircle, LogOut } from "lucide-react";
+import { Heart, XCircle, LogOut, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function RejectedPage() {
-  const router = useRouter();
+  const [checking, setChecking] = useState(false);
+
+  const handleCheckStatus = useCallback(async () => {
+    setChecking(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.replace("/login");
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        toast.error("Gagal mengecek status. Coba lagi.");
+        return;
+      }
+      if (!profile) {
+        toast.error("Profil tidak ditemukan");
+        return;
+      }
+      if (profile.status === "active") {
+        toast.success("Akun kamu sudah disetujui! Mengarahkan ke dashboard...");
+        window.location.replace("/dashboard");
+        return;
+      }
+      if (profile.status === "pending") {
+        toast.info("Akun kamu sedang menunggu persetujuan admin.");
+        window.location.replace("/pending");
+        return;
+      }
+      toast.info("Status akun kamu masih ditolak.");
+    } catch {
+      toast.error("Gagal mengecek status. Coba lagi.");
+    } finally {
+      setChecking(false);
+    }
+  }, []);
 
   const handleLogout = async () => {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    toast.success("Logout berhasil");
-    router.push("/login");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error("Gagal logout. Coba lagi.");
+        return;
+      }
+      toast.success("Logout berhasil");
+      window.location.replace("/login");
+    } catch {
+      toast.error("Gagal logout. Coba lagi.");
+    }
   };
 
   return (
@@ -75,6 +125,15 @@ export default function RejectedPage() {
             ))}
           </ul>
         </div>
+
+        <Button
+          className="w-full h-11 gap-2"
+          onClick={handleCheckStatus}
+          disabled={checking}
+        >
+          <RefreshCw className={`w-4 h-4 ${checking ? "animate-spin" : ""}`} />
+          {checking ? "Mengecek status..." : "Cek Status Akun"}
+        </Button>
 
         {/* Logout */}
         <Button

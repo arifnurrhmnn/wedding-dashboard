@@ -54,6 +54,11 @@ export const createVendorColumns = (
   onDelete: (vendor: Vendor) => void
 ): ColumnDef<Vendor>[] => [
   {
+    accessorKey: "kategori",
+    header: "Kategori",
+    filterFn: "equalsString",
+  },
+  {
     accessorKey: "nama",
     header: ({ column }) => (
       <button

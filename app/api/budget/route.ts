@@ -1,14 +1,12 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { BudgetValidationError, parseBudgetItem } from "@/lib/budget-server";
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { data, error } = await supabase
       .from("budget_items")
@@ -39,45 +37,32 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const body = await request.json();
-    const {
-      category_id,
-      nama,
-      estimasi,
-      realisasi,
-      dp,
-      tanggal_dp,
-      tanggal_lunas,
-      status,
-      tanggal_bayar,
-      catatan,
-      vendor_id,
-    } = body;
-
-    if (!category_id || !nama) {
-      return NextResponse.json(
-        { error: "category_id dan nama wajib diisi" },
-        { status: 400 }
-      );
+    const item = parseBudgetItem(await request.json());
+    const { data: category, error: categoryError } = await supabase
+      .from("budget_categories")
+      .select("id")
+      .eq("id", item.category_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (categoryError) throw categoryError;
+    if (!category) {
+      return NextResponse.json({ error: "Kategori tidak ditemukan" }, { status: 400 });
     }
-
-    // Auto-compute status if not explicitly provided
-    const dpVal = Number(dp) || 0;
-    const realisasiVal = Number(realisasi) || 0;
-    const estimasiVal = Number(estimasi) || 0;
-    let computedStatus = status ?? "belum_bayar";
-    if (!status) {
-      if (realisasiVal > 0 && realisasiVal >= estimasiVal)
-        computedStatus = "lunas";
-      else if (dpVal > 0 || realisasiVal > 0) computedStatus = "dp";
-      else computedStatus = "belum_bayar";
+    if (item.vendor_id) {
+      const { data: vendor, error: vendorError } = await supabase
+        .from("vendors")
+        .select("id")
+        .eq("id", item.vendor_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (vendorError) throw vendorError;
+      if (!vendor) {
+        return NextResponse.json({ error: "Vendor tidak ditemukan" }, { status: 400 });
+      }
     }
 
     const { data, error } = await supabase
@@ -85,17 +70,7 @@ export async function POST(request: Request) {
       .insert([
         {
           user_id: user.id,
-          category_id,
-          nama,
-          estimasi: estimasiVal,
-          realisasi: realisasiVal,
-          dp: dpVal,
-          tanggal_dp: tanggal_dp || null,
-          tanggal_lunas: tanggal_lunas || null,
-          status: computedStatus,
-          tanggal_bayar: tanggal_bayar || null,
-          catatan: catatan || null,
-          vendor_id: vendor_id || null,
+          ...item,
         },
       ])
       .select("*, vendors(nama)")
@@ -111,7 +86,10 @@ export async function POST(request: Request) {
       vendor_nama: vendors?.nama ?? null,
       vendors: undefined,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof BudgetValidationError || error instanceof SyntaxError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "Failed to create budget item" },
       { status: 500 }

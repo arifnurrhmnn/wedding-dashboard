@@ -24,6 +24,7 @@ import {
   Schedule,
 } from "@/redux/slices/scheduleSlice";
 import { toast } from "sonner";
+import { localMonthRange } from "@/lib/schedule";
 
 export default function KalenderPage() {
   const dispatch = useAppDispatch();
@@ -50,7 +51,8 @@ export default function KalenderPage() {
 
   useEffect(() => {
     const month = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
-    dispatch(fetchSchedules({ month }));
+    const request = dispatch(fetchSchedules({ month, ...localMonthRange(currentYear, currentMonth) }));
+    return () => request.abort();
   }, [dispatch, currentYear, currentMonth]);
 
   const handlePreviousMonth = () => {

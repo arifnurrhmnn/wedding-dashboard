@@ -1,25 +1,25 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
+import { parseChecklistInput } from "@/lib/checklist";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
-    const body = await request.json();
+    const parsed = parseChecklistInput(await request.json(), true);
+    if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
     const { id } = await params;
 
     const { data, error } = await supabase
       .from("checklist")
-      .update(body)
+      .update(parsed.value)
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
       .single();
     if (error) throw error;
@@ -27,7 +27,7 @@ export async function PATCH(
   } catch (error) {
     console.error("Error updating task:", error);
     return NextResponse.json(
-      { error: "Failed to update task", details: error },
+      { error: "Failed to update task" },
       { status: 500 }
     );
   }
@@ -38,15 +38,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
-    const { error } = await supabase.from("checklist").delete().eq("id", id);
+    const { error } = await supabase.from("checklist").delete().eq("id", id).eq("user_id", user.id);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (error) {

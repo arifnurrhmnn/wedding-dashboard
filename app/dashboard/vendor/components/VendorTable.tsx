@@ -83,6 +83,7 @@ export function VendorTable({ data, onEdit, onDelete }: VendorTableProps) {
       sorting,
       columnFilters,
       globalFilter,
+      columnVisibility: { kategori: false },
     },
     defaultColumn: {
       minSize: 0,

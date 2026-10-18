@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 
 export async function DELETE() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     // First, count how many records will be deleted
     const { count, error: countError } = await supabase
       .from("tamu_undangan")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
 
     if (countError) {
       return NextResponse.json(
@@ -22,11 +20,10 @@ export async function DELETE() {
       );
     }
 
-    // RLS akan otomatis hanya hapus data milik user ini
     const { error: deleteError } = await supabase
       .from("tamu_undangan")
       .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all by using a condition that matches everything
+      .eq("user_id", user.id);
 
     if (deleteError) {
       return NextResponse.json(

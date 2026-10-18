@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -74,10 +74,6 @@ export function VendorFormModal({
 }: VendorFormModalProps) {
   const isEdit = !!vendor;
   const [form, setForm] = useState(() => getInitialForm(vendor));
-
-  useEffect(() => {
-    setForm(getInitialForm(vendor));
-  }, [vendor]);
 
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) setForm(getInitialForm(vendor));

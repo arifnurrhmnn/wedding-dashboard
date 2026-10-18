@@ -78,7 +78,7 @@ export default function VendorDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { selectedVendor: vendor, detailLoading } = useAppSelector(
+  const { selectedVendor: vendor, detailLoading, loading } = useAppSelector(
     (state) => state.vendor
   );
 
@@ -88,13 +88,15 @@ export default function VendorDetailPage({
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchVendorDetail(id));
+    const request = dispatch(fetchVendorDetail(id));
     return () => {
+      request.abort();
       dispatch(clearSelectedVendor());
     };
   }, [dispatch, id]);
 
   const handleUpdate = async (data: Omit<Vendor, "id">) => {
+    if (vendor?.id !== id) return;
     try {
       await dispatch(updateVendor({ id, data })).unwrap();
       toast.success("Vendor diperbarui");
@@ -117,7 +119,7 @@ export default function VendorDetailPage({
     }
   };
 
-  if (detailLoading) {
+  if (detailLoading || (vendor && vendor.id !== id)) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -290,12 +292,16 @@ export default function VendorDetailPage({
       </div>
 
       {/* Edit Modal */}
-      <VendorFormModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        vendor={vendor}
-        onSubmit={handleUpdate}
-      />
+      {editModalOpen && (
+        <VendorFormModal
+          key={vendor.id}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          vendor={vendor}
+          onSubmit={handleUpdate}
+          loading={loading}
+        />
+      )}
 
       {/* Delete Confirm */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

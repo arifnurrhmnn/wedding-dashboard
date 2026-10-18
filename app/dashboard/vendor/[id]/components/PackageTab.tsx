@@ -132,12 +132,15 @@ export function PackageTab({
   };
 
   const handleSetFinal = async (pkg: VendorPackage) => {
-    if (pkg.is_final) return;
+    if (pkg.is_final || loading) return;
+    setLoading(true);
     try {
       await dispatch(setFinalPackage({ vendorId, packageId: pkg.id })).unwrap();
       toast.success(`"${pkg.nama_paket}" ditetapkan sebagai paket final`);
     } catch {
       toast.error("Gagal menetapkan paket final");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,6 +228,7 @@ export function PackageTab({
                 {!pkg.is_final && vendorStatus !== "batal" && (
                   <Button
                     size="sm"
+                    disabled={loading}
                     variant="outline"
                     className="text-xs border-green-500/30 text-green-400 hover:bg-green-500/10 hover:text-green-300"
                     onClick={() => handleSetFinal(pkg)}

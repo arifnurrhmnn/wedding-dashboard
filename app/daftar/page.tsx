@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import Link from "next/link";
 
 export default function DaftarPage() {
-  const router = useRouter();
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,11 +26,11 @@ export default function DaftarPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        router.push("/dashboard");
+        window.location.replace("/dashboard");
       }
     };
     checkSession();
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,12 +72,12 @@ export default function DaftarPage() {
       if (loginError) {
         // Register berhasil tapi login gagal — arahkan ke login manual
         toast.success("Pendaftaran berhasil! Silakan login untuk melanjutkan.");
-        router.push("/login");
+        window.location.replace("/login");
         return;
       }
 
       toast.success("Pendaftaran berhasil! Menunggu persetujuan admin.");
-      router.push("/pending");
+      window.location.replace("/pending");
     } catch {
       toast.error("Terjadi kesalahan. Coba lagi.");
     } finally {

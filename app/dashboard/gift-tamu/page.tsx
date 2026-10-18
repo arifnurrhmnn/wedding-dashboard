@@ -27,6 +27,7 @@ import axiosClient from "@/lib/axiosClient";
 import { KATEGORI_OPTIONS, GIFT_TYPE_OPTIONS } from "@/utils/constants";
 import { cn } from "@/lib/utils";
 import { GiftFormModal } from "./components/GiftFormModal";
+import { clampPage } from "@/lib/pagination";
 
 const KATEGORI_BADGE: Record<string, string> = {
   "Keluarga Inti": "bg-blue-500/15 text-blue-400 border-blue-500/30",
@@ -105,9 +106,10 @@ export default function GiftTamuPage() {
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const activePage = clampPage(currentPage, filteredList.length, PAGE_SIZE);
   const paginatedList = filteredList.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE
   );
 
   // Summary
@@ -373,15 +375,15 @@ export default function GiftTamuPage() {
       {filteredList.length > PAGE_SIZE && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            Halaman {currentPage} dari {totalPages} &nbsp;·&nbsp;{" "}
+            Halaman {activePage} dari {totalPages} &nbsp;·&nbsp;{" "}
             {filteredList.length} tamu
           </p>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(1, activePage - 1))}
+              disabled={activePage === 1}
               className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
             >
               Previous
@@ -389,8 +391,8 @@ export default function GiftTamuPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(totalPages, activePage + 1))}
+              disabled={activePage === totalPages}
               className="h-9 px-4 border-border hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
             >
               Next

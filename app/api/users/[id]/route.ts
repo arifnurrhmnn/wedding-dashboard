@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -17,26 +17,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    // Cek apakah caller adalah admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireActiveUser({ adminOnly: true });
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
 
     const { id } = await params;
     const { role, nama, status } = await request.json();
+
+    if (nama !== undefined && (typeof nama !== "string" || !nama.trim())) {
+      return NextResponse.json({ error: "Nama wajib berupa teks dan tidak boleh kosong" }, { status: 400 });
+    }
 
     if (role !== undefined && !["admin", "client"].includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
@@ -96,23 +86,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    // Cek apakah caller adalah admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireActiveUser({ adminOnly: true });
+    if (auth.response) return auth.response;
+    const { user } = auth;
 
     const { id } = await params;
 

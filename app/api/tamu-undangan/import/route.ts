@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { requireActiveUser } from "@/lib/api-auth";
+import {
+  newGuestImportValues,
+  parseGuestImportRow,
+  validateGuestGiftMutation,
+} from "@/lib/guest-import";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+    const auth = await requireActiveUser();
+    if (auth.response) return auth.response;
+    const { supabase, user } = auth;
     const body = await request.json();
-    const { data: guestsData } = body;
-
+    const guestsData = body?.data;
     if (!Array.isArray(guestsData) || guestsData.length === 0) {
-      return NextResponse.json(
-        { error: "Invalid data format" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
     }
 
     let inserted = 0;
@@ -26,105 +23,51 @@ export async function POST(request: NextRequest) {
     const errors: Array<{ row: number; error: string }> = [];
 
     for (let i = 0; i < guestsData.length; i++) {
-      const guest = guestsData[i];
-
-      // Validation
-      if (!guest.nama || guest.nama.trim() === "") {
-        errors.push({ row: i + 2, error: "Nama wajib diisi" });
-        skipped++;
-        continue;
-      }
-
       try {
-        // Check if unique_id exists and if record exists in DB
-        if (guest.unique_id && guest.unique_id.trim() !== "") {
-          // Validate unique_id format
-          if (!/^INV-\d{6}$/.test(guest.unique_id)) {
-            errors.push({
-              row: i + 2,
-              error: "Format unique_id tidak valid (harus INV-XXXXXX)",
-            });
-            skipped++;
-            continue;
-          }
-
-          // Try to find existing record
-          const { data: existing } = await supabase
+        const { data, uniqueId } = parseGuestImportRow(guestsData[i]);
+        let existing: {
+          id: string;
+          gift_type: "uang" | "kado" | null;
+          gift_value: string | null;
+        } | null = null;
+        if (uniqueId) {
+          const lookup = await supabase
             .from("tamu_undangan")
-            .select("id")
-            .eq("unique_id", guest.unique_id)
-            .single();
+            .select("id, gift_type, gift_value")
+            .eq("user_id", user.id)
+            .eq("unique_id", uniqueId)
+            .maybeSingle();
+          if (lookup.error) throw lookup.error;
+          existing = lookup.data;
+        }
 
-          if (existing) {
-            // Update existing record
-            const { error: updateError } = await supabase
-              .from("tamu_undangan")
-              .update({
-                nama: guest.nama,
-                kategori: guest.kategori || "",
-                skala_prioritas: guest.skala_prioritas || "",
-                tipe_undangan: guest.tipe_undangan || "",
-                qty: parseInt(guest.qty) || 1,
-                gift_type: guest.gift_type || null,
-                gift_value: guest.gift_value || null,
-              })
-              .eq("unique_id", guest.unique_id);
-
-            if (updateError) {
-              errors.push({ row: i + 2, error: updateError.message });
-              skipped++;
-            } else {
-              updated++;
-            }
-          } else {
-            // Insert new record with provided unique_id
-            const { error: insertError } = await supabase
-              .from("tamu_undangan")
-              .insert({
-                unique_id: guest.unique_id,
-                nama: guest.nama,
-                kategori: guest.kategori || "",
-                skala_prioritas: guest.skala_prioritas || "",
-                tipe_undangan: guest.tipe_undangan || "",
-                qty: parseInt(guest.qty) || 1,
-                gift_type: guest.gift_type || null,
-                gift_value: guest.gift_value || null,
-                user_id: user.id,
-              });
-
-            if (insertError) {
-              errors.push({ row: i + 2, error: insertError.message });
-              skipped++;
-            } else {
-              inserted++;
-            }
-          }
+        if (existing) {
+          // Absent CSV columns leave their stored values untouched.
+          const update = validateGuestGiftMutation(data, existing);
+          const { error } = await supabase
+            .from("tamu_undangan")
+            .update(update)
+            .eq("user_id", user.id)
+            .eq("id", existing.id);
+          if (error) throw error;
+          updated++;
         } else {
-          // Insert new record without unique_id (will be auto-generated)
-          const { error: insertError } = await supabase
-            .from("tamu_undangan")
-            .insert({
-              nama: guest.nama,
-              kategori: guest.kategori || "",
-              skala_prioritas: guest.skala_prioritas || "",
-              tipe_undangan: guest.tipe_undangan || "",
-              qty: parseInt(guest.qty) || 1,
-              gift_type: guest.gift_type || null,
-              gift_value: guest.gift_value || null,
-              user_id: user.id,
-            });
-
-          if (insertError) {
-            errors.push({ row: i + 2, error: insertError.message });
-            skipped++;
-          } else {
-            inserted++;
-          }
+          const insert = newGuestImportValues(validateGuestGiftMutation(data));
+          const { error } = await supabase.from("tamu_undangan").insert({
+            ...insert,
+            ...(uniqueId ? { unique_id: uniqueId } : {}),
+            user_id: user.id,
+          });
+          if (error) throw error;
+          inserted++;
         }
       } catch (error) {
         errors.push({
           row: i + 2,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error:
+            error && typeof error === "object" && "message" in error
+              ? String(error.message)
+              : "Unknown error",
         });
         skipped++;
       }
@@ -132,22 +75,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      summary: {
-        total: guestsData.length,
-        inserted,
-        updated,
-        skipped,
-        errors,
-      },
+      summary: { total: guestsData.length, inserted, updated, skipped, errors },
     });
   } catch (error) {
     console.error("Import error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to import data",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to import data" }, { status: 500 });
   }
 }

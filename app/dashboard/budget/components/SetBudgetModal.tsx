@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ interface SetBudgetModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentBudget: number;
-  currentCatatan?: string;
+  currentCatatan?: string | null;
   onSubmit: (total_budget: number, catatan: string) => Promise<void>;
   loading: boolean;
 }
@@ -30,7 +30,7 @@ const fmt = (n: number) =>
     minimumFractionDigits: 0,
   }).format(n);
 
-export function SetBudgetModal({
+function SetBudgetContent({
   open,
   onOpenChange,
   currentBudget,
@@ -39,17 +39,7 @@ export function SetBudgetModal({
   loading,
 }: SetBudgetModalProps) {
   const [budget, setBudget] = useState(String(currentBudget || ""));
-  const [catatan, setCatatan] = useState(currentCatatan);
-
-  // Reset form when modal opens
-  const prevOpen = useState(open)[0];
-  useEffect(() => {
-    if (open && !prevOpen) {
-      setBudget(String(currentBudget || ""));
-      setCatatan(currentCatatan ?? "");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const [catatan, setCatatan] = useState(currentCatatan ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,4 +141,10 @@ export function SetBudgetModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+export function SetBudgetModal(props: SetBudgetModalProps) {
+  return props.open ? (
+    <SetBudgetContent key={`${props.currentBudget}:${props.currentCatatan ?? ""}`} {...props} />
+  ) : null;
 }
