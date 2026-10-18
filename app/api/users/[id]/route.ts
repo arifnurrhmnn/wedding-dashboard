@@ -1,15 +1,9 @@
 import { requireActiveUser } from "@/lib/api-auth";
-import { createClient } from "@supabase/supabase-js";
+import {
+  createSupabaseAdminClient,
+  SupabaseAdminConfigurationError,
+} from "@/lib/supabase-admin";
 import { NextResponse } from "next/server";
-
-// Helper: buat admin client (service role)
-function createAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 // PATCH - Update role user (admin only)
 export async function PATCH(
@@ -101,13 +95,21 @@ export async function DELETE(
     }
 
     // Hapus user dari auth.users menggunakan service role
-    const adminClient = createAdminClient();
+    const adminClient = createSupabaseAdminClient();
     const { error: authError } = await adminClient.auth.admin.deleteUser(id);
 
     if (authError) throw authError;
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof SupabaseAdminConfigurationError) {
+      console.error("Delete user configuration error:", error.message);
+      return NextResponse.json(
+        { error: "Layanan penghapusan akun belum dikonfigurasi" },
+        { status: 503 }
+      );
+    }
+
     console.error("Error deleting user:", error);
     return NextResponse.json(
       { error: "Failed to delete user" },

@@ -299,3 +299,37 @@ test("sidebar preference uses a stable server snapshot despite a persisted minim
   assert.equal(serverSnapshot, false);
   assert.equal(clientSnapshot, true);
 });
+
+test("register route defers Supabase Admin initialization until request time", async () => {
+  let createClientCalls = 0;
+  const load = modules(
+    {
+      "@supabase/supabase-js": {
+        createClient() {
+          createClientCalls += 1;
+          return {};
+        },
+      },
+    },
+    { console: { ...console, error() {} } }
+  );
+
+  const { POST } = load("app/api/auth/register/route.ts");
+  assert.equal(createClientCalls, 0);
+
+  const response = await POST({
+    async json() {
+      return {
+        email: "user@example.test",
+        password: "password-valid",
+        nama: "User Test",
+      };
+    },
+  });
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(JSON.parse(await response.text()), {
+    error: "Layanan pendaftaran belum dikonfigurasi",
+  });
+  assert.equal(createClientCalls, 0);
+});

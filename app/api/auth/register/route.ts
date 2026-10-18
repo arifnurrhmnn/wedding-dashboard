@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-// Gunakan service role key agar bisa createUser tanpa kirim email konfirmasi
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+import {
+  createSupabaseAdminClient,
+  SupabaseAdminConfigurationError,
+} from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +21,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Dibuat saat request berjalan agar secret yang belum dikonfigurasi tidak
+    // menggagalkan proses build Next.js.
+    const supabaseAdmin = createSupabaseAdminClient();
 
     // Cek apakah email sudah terdaftar via profiles table (lebih efisien dari listUsers)
     const { data: existingProfile } = await supabaseAdmin
@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ user: data.user }, { status: 201 });
   } catch (err) {
+    if (err instanceof SupabaseAdminConfigurationError) {
+      console.error("Register configuration error:", err.message);
+      return NextResponse.json(
+        { error: "Layanan pendaftaran belum dikonfigurasi" },
+        { status: 503 }
+      );
+    }
+
     console.error("Register error:", err);
     return NextResponse.json(
       { error: "Terjadi kesalahan server" },

@@ -21,6 +21,11 @@ empty values and can be committed. Restart the development server after changing
 environment values. For deployment, set the same variables in your hosting
 provider's environment settings.
 
+For Vercel, add all three variables in the project's Environment Variables
+settings for every environment you deploy to (for example Production and
+Preview), then redeploy. Vercel does not upload `.env.local`, and an existing
+deployment does not automatically receive variables added after its build.
+
 The committed `.env.example` must remain empty. Put real values only in
 `.env.local` or in the deployment provider's encrypted environment settings.
 
